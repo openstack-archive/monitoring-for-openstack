@@ -1,10 +1,10 @@
 #!/bin/bash
-
-# Cinder API monitoring script
 #
-# Copyright © 2013 eCindernce <licensing@ecindernce.com>
+# Neutron server monitoring script
 #
-# Author: Emilien Macchi <emilien.macchi@ecindernce.com>
+# Copyright © 2013 eNovance <licensing@enovance.com>
+#
+# Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,10 +33,10 @@ usage ()
 {
     echo "Usage: $0 [OPTIONS]"
     echo " -h               Get help"
-    echo " -H <Auth URL>    URL for obtaining an auth token. Ex: http://localhost"
-    echo " -T <tenant>      Tenant to use to get an auth token"
-    echo " -U <username>    Username to use to get an auth token"
-    echo " -P <password>    Password to use ro get an auth token"
+    echo " -H <Auth URL>      URL for obtaining an auth token. Ex: http://localhost"
+    echo " -T <admin tenant>  Admin tenant name to get an auth token"
+    echo " -U <username>      Username to use to get an auth token"
+    echo " -P <password>      Password to use ro get an auth token"
 }
 
 while getopts 'h:H:U:T:P:' OPTION
@@ -65,14 +65,13 @@ do
     esac
 done
 
-if ! which curl >/dev/null 2>&1
+if ! which curl >/dev/null 2>&1 || ! which netstat >/dev/null 2>&1
 then
-    echo "curl is not installed."
+    echo "curl or netstat are not installed."
     exit $STATE_UNKNOWN
 fi
 
-# Get a token from Keystone
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password": "'$OS_PASSWORD'"}}}' -H "Content-type: application/json" ${OS_AUTH_URL}:5000/v2.0/tokens/ 2>&1 | grep token|awk '{print $8}'|grep -o '".*"' | sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 # Use the token to get a tenant ID. By default, it takes the second tenant
 TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
@@ -83,20 +82,23 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-QUOTAS=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:8776/v1/${TENANT_ID}/os-quota-sets/${OS_TENANT}/defaults | grep "gigabytes")
+NETWORKS=$(curl -v -H "X-Auth-Token:'$TOKEN'" ${OS_AUTH_URL}:9696/v2/${TENANT_ID}/networks
 END=`date +%s`
 
 TIME=$((END-START))
 
-if [ -z "$QUOTAS" ]; then
-    echo "Unable to list default quotas"
+PID=$(pidof -x neutron-server)
+
+if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID || test -z $NETWORKS
+then
+    echo "Neutron server is down."
     exit $STATE_CRITICAL
 else
     if [ "$TIME" -gt "10" ]; then
-        echo "Get default quotas after 10 seconds, it's too long."
+        echo "Get networks after 10 seconds, it's too long."
         exit $STATE_WARNING
     else
-        echo "Get default quotas, Cinder API is working: list default quotas in $TIME seconds."
+        echo "Neutron server is up and running."
         exit $STATE_OK
     fi
 fi

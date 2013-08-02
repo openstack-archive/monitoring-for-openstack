@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Cinder Scheduler monitoring script
-#
+# Cinder Volume monitoring script
+
 # Copyright © 2013 eCindernce <licensing@ecindernce.com>
 #
 # Author: Emilien Macchi <emilien.macchi@ecindernce.com>
@@ -54,13 +54,13 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pidof -x cinder-scheduler)
+PID=$(pidof -x cinder-volume)
 
 if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
 then
-    echo "cinder-scheduler is not connected to AMQP."
+    echo "cinder-volume is not connected to AMQP."
     exit $STATE_CRITICAL
 fi
 
-echo "cinder-scheduler is working."
+echo "cinder-volume is working."
 exit $STATE_OK

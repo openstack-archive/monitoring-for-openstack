@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Ceilometer Collector monitoring script for Sensu
+# Ceilometer Collector monitoring script
 #
 # Copyright © 2013 eNovance <licensing@enovance.com>
 #

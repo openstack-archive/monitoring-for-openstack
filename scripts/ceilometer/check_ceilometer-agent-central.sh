@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Ceilometer Central Agent monitoring script for Sensu
+# Ceilometer Central Agent monitoring script
 #
 # Copyright © 2013 eNovance <licensing@enovance.com>
 #

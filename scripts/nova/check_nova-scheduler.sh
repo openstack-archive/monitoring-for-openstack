@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Nova Scheduler monitoring script for Sensu
+# Nova Scheduler monitoring script
 #
 # Copyright © 2013 eNovance <licensing@enovance.com>
 #
@@ -56,7 +56,7 @@ fi
 
 PID=$(pidof -x nova-scheduler)
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
+if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
 then
     echo "nova-scheduler is not connected to AMQP."
     exit $STATE_CRITICAL

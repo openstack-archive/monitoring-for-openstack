@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Ceilometer API monitoring script for Sensu
+# Ceilometer API monitoring script
 #
 # Copyright © 2013 eNovance <licensing@enovance.com>
 #

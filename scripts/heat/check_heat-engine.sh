@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Cinder Scheduler monitoring script
+# Heat Engine monitoring script
 #
-# Copyright © 2013 eCindernce <licensing@ecindernce.com>
+# Copyright © 2013 eNovance <licensing@enovance.com>
 #
-# Author: Emilien Macchi <emilien.macchi@ecindernce.com>
+# Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirement: netstat
+# Requirement:netstat 
 #
 set -e
 
@@ -54,13 +54,13 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pidof -x cinder-scheduler)
+PID=$(pidof -x heat-engine)
 
 if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
 then
-    echo "cinder-scheduler is not connected to AMQP."
+    echo "heat-engine is not connected to AMQP."
     exit $STATE_CRITICAL
 fi
 
-echo "cinder-scheduler is working."
+echo "heat-engine is working."
 exit $STATE_OK
