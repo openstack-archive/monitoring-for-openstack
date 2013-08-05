@@ -82,7 +82,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-NETWORKS=$(curl -v -H "X-Auth-Token:'$TOKEN'" ${OS_AUTH_URL}:9696/v2/${TENANT_ID}/networks
+NETWORKS=$(curl -v -H "X-Auth-Token:'$TOKEN'" ${OS_AUTH_URL}:9696/v2/${TENANT_ID}/networks)
 END=`date +%s`
 
 TIME=$((END-START))
