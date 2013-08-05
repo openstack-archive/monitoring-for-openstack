@@ -82,14 +82,14 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-NETWORKS=$(curl -v -H "X-Auth-Token:'$TOKEN'" ${OS_AUTH_URL}:9696/v2.0/networks.json)
+NETWORKS=$(curl -v -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" http://localhost:9696/v2.0/networks)
 END=`date +%s`
 
 TIME=$((END-START))
 
-PID=$(pidof -x neutron-server)
+PID=$(ps -ef | grep neutron-server | awk {'print$2'} | head -n 1)
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID || test -z $NETWORKS
+if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID || test -z "$NETWORKS"
 then
     echo "Neutron server is down."
     exit $STATE_CRITICAL
