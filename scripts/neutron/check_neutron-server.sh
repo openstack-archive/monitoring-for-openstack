@@ -71,7 +71,7 @@ then
     exit $STATE_UNKNOWN
 fi
 
-TOKEN=$(curl -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password": "'$OS_PASSWORD'"}}}' -H "Content-type: application/json" ${OS_AUTH_URL}:5000/v2.0/tokens/ 2>&1 | grep token|awk '{print $8}'|grep -o '".*"' | sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 # Use the token to get a tenant ID. By default, it takes the second tenant
 TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
