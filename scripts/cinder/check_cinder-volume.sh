@@ -54,9 +54,9 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pidof -x cinder-volume)
+PID=$(ps -ef | grep cinder-volume | awk {'print$2'} | head -n 1)
 
-if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
+if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$PID"
 then
     echo "cinder-volume is not connected to AMQP."
     exit $STATE_CRITICAL

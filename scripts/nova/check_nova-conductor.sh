@@ -54,9 +54,9 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pidof -x nova-conductor)
+PID=$(ps -ef | grep nova-conductor | awk {'print$2'} | head -n 1)
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID | grep amqp)
+if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$PID"
 then
     echo "nova-conductor is not connected to AMQP."
     exit $STATE_CRITICAL

@@ -54,9 +54,9 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pidof -x cinder-scheduler)
+PID=$(ps -ef | grep cinder-scheduler | awk {'print$2'} | head -n 1)
 
-if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
+if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$PID"
 then
     echo "cinder-scheduler is not connected to AMQP."
     exit $STATE_CRITICAL
