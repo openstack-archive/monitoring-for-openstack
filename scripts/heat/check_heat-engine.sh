@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# Heat Engine monitoring script
+# Heat engine monitoring script
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2013 eHeatnce <licensing@eHeatnce.com>
 #
-# Author: Emilien Macchi <emilien.macchi@enovance.com>
+# Author: Emilien Macchi <emilien.macchi@eHeatnce.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirement:netstat 
+# Requirement: netstat
 #
 set -e
 
@@ -54,9 +54,9 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pidof -x heat-engine)
+PID=$(ps -ef | grep heat-engine | grep python | awk {'print$2'} | head -n 1)
 
-if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
+if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$PID"
 then
     echo "heat-engine is not connected to AMQP."
     exit $STATE_CRITICAL

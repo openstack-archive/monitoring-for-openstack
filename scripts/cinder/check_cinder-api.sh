@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Cinder API monitoring script
+
+# Copyright © 2013 eCindernce <licensing@eCindernce.com>
 #
-# Copyright © 2013 eCindernce <licensing@ecindernce.com>
-#
-# Author: Emilien Macchi <emilien.macchi@ecindernce.com>
+# Author: Emilien Macchi <emilien.macchi@eCindernce.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ fi
 TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 # Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==1'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 if [ -z "$TOKEN" ]; then
     echo "Unable to get a token from Keystone API"
@@ -89,14 +89,14 @@ END=`date +%s`
 TIME=$((END-START))
 
 if [ -z "$QUOTAS" ]; then
-    echo "Unable to list default quotas"
+    echo "Unable to list quotas"
     exit $STATE_CRITICAL
 else
     if [ "$TIME" -gt "10" ]; then
-        echo "Get default quotas after 10 seconds, it's too long."
+        echo "Get quotas after 10 seconds, it's too long."
         exit $STATE_WARNING
     else
-        echo "Get default quotas, Cinder API is working: list default quotas in $TIME seconds."
+        echo "Get quotas, Cinder API is working: list quotas in $TIME seconds."
         exit $STATE_OK
     fi
 fi
