@@ -82,7 +82,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-NETWORKS=$(curl -v -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" http://localhost:9696/v2.0/networks)
+NETWORKS=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" http://localhost:9696/v2.0/networks)
 END=`date +%s`
 
 TIME=$((END-START))
