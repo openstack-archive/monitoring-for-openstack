@@ -87,7 +87,7 @@ END=`date +%s`
 
 TIME=$((END-START))
 
-PID=$(ps -ef | grep neutron-server | awk {'print$2'} | head -n 1)
+PID=$(ps -ef | grep neutron-server | grep python | awk {'print$2'} | head -n 1)
 
 if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID || test -z "$NETWORKS"
 then

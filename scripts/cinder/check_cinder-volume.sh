@@ -54,7 +54,7 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(ps -ef | grep cinder-volume | awk {'print$2'} | head -n 1)
+PID=$(ps -ef | grep cinder-volume | grep python | awk {'print$2'} | head -n 1)
 
 if KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$PID"
 then
