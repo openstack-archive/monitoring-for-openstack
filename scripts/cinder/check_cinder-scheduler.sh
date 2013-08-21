@@ -2,9 +2,9 @@
 #
 # Cinder Scheduler monitoring script
 #
-# Copyright © 2013 eCindernce <licensing@ecindernce.com>
+# Copyright © 2013 eCindernce <licensing@enovance.com>
 #
-# Author: Emilien Macchi <emilien.macchi@ecindernce.com>
+# Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

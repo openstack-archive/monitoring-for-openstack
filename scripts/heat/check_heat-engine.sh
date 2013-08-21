@@ -2,9 +2,9 @@
 #
 # Heat engine monitoring script
 #
-# Copyright © 2013 eHeatnce <licensing@eHeatnce.com>
+# Copyright © 2013 eHeatnce <licensing@enovance.com>
 #
-# Author: Emilien Macchi <emilien.macchi@eHeatnce.com>
+# Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
