@@ -2,7 +2,7 @@
 #
 # Heat engine monitoring script
 #
-# Copyright © 2013 eHeatnce <licensing@enovance.com>
+# Copyright © 2013 eNovance <licensing@enovance.com>
 #
 # Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
