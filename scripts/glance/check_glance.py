@@ -23,9 +23,9 @@
 
 
 import sys
+import os
 import argparse
-
-from glance import client as glance_client
+from glanceclient import client as gclient
 from glance.common import exception
 from glance.common import utils
 from glance import version
@@ -116,13 +116,12 @@ def check_glance(c,args):
 
 if __name__ == '__main__':
   args = collect_args().parse_args()
+  os.environ['OS_USERNAME'] = args.username
+  os.environ['OS_AUTH_URL'] = args.auth_url
+  os.environ['OS_TENANT_NAME'] = args.tenant
+  os.environ['OS_PASSWORD'] = args.password
   try:
-    c = glance_client.get_client(host=args.host,
-              username=args.username,
-              password=args.password,
-              tenant=args.tenant,
-              auth_url=args.auth_url,
-              region=args.region_name)
+    c = gclient.Client('1','')
     sys.exit(check_glance(c,args))
   except Exception as e:
   	print str(e)
