@@ -1,0 +1,123 @@
+#!/bin/bash
+#
+# check_swift_recon - Check OpenStack Swift recon values
+#
+# Copyright © 2012 eNovance <licensing@enovance.com>
+#
+# Author: Mehdi Abaakouk <mehdi.abaakouk@enovance.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+
+PROGNAME=`basename $0`
+REVISION="1.0"
+
+STATE_OK=0
+STATE_WARNING=1
+STATE_CRITICAL=2
+STATE_UNKNOWN=3
+STATE_DEPENDENT=4
+
+
+print_usage() {
+    echo "Usage: $PROGNAME [--field|-f] FIELD [[--critical|-c] VALUE [--warning|-w] VALUE]"
+}
+
+print_help() {
+    print_usage
+    echo "This plugin checks Swift status using the swift-recon program."
+    exit 1
+}
+
+while [ "$1" ]; do
+	case "$1" in
+	    --help|-h)
+		print_help
+		exit 0
+		;;
+	    --field|-f)
+		field=$2
+		shift ; shift
+		;;
+	    --critical|-c)
+		critical=$2
+		shift ; shift
+		;;
+	    --warning|-w)
+		warning=$2
+		shift ; shift
+		;;
+	esac
+done
+
+[ ! "$field" ] && print_help
+
+if ! which swift-recon >/dev/null 2>&1
+then
+    echo "swift-recon command not found"
+    exit $STATE_UNKNOWN
+fi
+
+
+case $field in
+	async_pending)
+		opt="--async"
+		;;
+	replication_time)
+		opt="--replication"
+		;;
+	ALL_auditor|ZBF_auditor)
+		opt="--auditor"
+		;;
+	updater_last_sweep)
+		opt="--updater"
+		;;
+	object_expiration_pass|expired_last_pass)
+		opt="--expirer"
+		;;
+	quarantined_objects|quarantined_accounts|quarantined_containers)
+		opt="--quarantined"
+		;;
+	orphan|tcp_in_use|time_wait|tcp6_in_use|tcp_mem_allocated_bytes)
+		opt="--sockstat"
+		;;
+esac
+
+data=$(swift-recon $opt | sed -n 's/^\['$field'\] //gp')
+eval $(echo $data | sed -n 's/^low: \([[:digit:]\.]*\), high: \([[:digit:]\.]*\), avg: \([[:digit:]\.]*\), total: \([[:digit:]\.]*\), Failed: \([[:digit:]\.]*\)%, no_result: \([[:digit:]\.]*\), reported: \([[:digit:]\.]*\)/low="\1";high="\2";avg="\3";total="\4";failed="\5";no_result="\6";reported="\7"/gp')
+
+# no
+failed=$(( ${failed/./} / 10 )) # change percent in perthousand
+avg=$(( ${avg/./} / 10 )) # change percent in perthousand
+
+if [ "$no_result" != "0" ]; then 
+	echo "CRITICAL - $data"
+	exit $STATE_CRITICAL
+elif [ "$failed" != "0" ]; then
+	echo "CRITICAL - $data"
+	exit $STATE_CRITICAL
+elif [ -n "$critical" -a -n "$warning" ]; then
+	if [ $avg -ge $warning -a $avg -lt $critical ]; then
+		echo "WARNING - $data"
+		exit $STATE_WARNING
+	elif [ $avg -ge $critical ]; then
+		echo "CRITICAL - $data"
+		exit $STATE_CRITICAL
+	fi
+fi
+echo "OK - $data"
+exit $STATE_OK
