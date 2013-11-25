@@ -28,10 +28,36 @@ STATE_CRITICAL=2
 STATE_UNKNOWN=3
 STATE_DEPENDENT=4
 
+usage ()
+{
+    echo "Usage: $0 [OPTIONS]"
+    echo " -h Get help"
+    echo "No parameter : Just run the script"
+}
+
+while getopts 'h:H:U:T:P:' OPTION
+do
+case $OPTION in
+        h)
+            usage
+            exit 0
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if ! which netstat >/dev/null 2>&1 
+then
+    echo "netstat is not installed."
+    exit $STATE_UNKNOWN
+fi
 
 PID=$(pidof -x ceilometer-collector)
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID
+if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$PID"
 then
     echo "Ceilometer Collector is not connected to AMQP."
     exit $STATE_CRITICAL
