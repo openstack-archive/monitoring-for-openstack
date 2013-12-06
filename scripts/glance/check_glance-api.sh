@@ -40,7 +40,7 @@ usage ()
     echo " -P <password>        Password to use to get an auth token"
 }
 
-while getopts 'h:H:U:T:P:E:' OPTION
+while getopts 'hH:U:T:P:E:' OPTION
 do
     case $OPTION in
         h)

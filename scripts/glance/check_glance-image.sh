@@ -40,7 +40,7 @@ usage ()
     echo " -N <name>        Name of the monitoring image"
 }
 
-while getopts 'h:H:U:T:P:N:' OPTION
+while getopts 'hH:U:T:P:N:' OPTION
 do
     case $OPTION in
         h)
