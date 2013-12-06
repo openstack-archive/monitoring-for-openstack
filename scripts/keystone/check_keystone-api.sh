@@ -33,12 +33,12 @@ usage ()
 {
     echo "Usage: $0 [OPTIONS]"
     echo " -h               Get help"
-    echo " -H <Auth URL>    URL for obtaining an auth token"
+    echo " -H <Auth URL>    URL for obtaining an auth token. Ex : http://localhost:5000/v2.0"
     echo " -U <username>    Username to use to get an auth token"
     echo " -P <password>    Password to use ro get an auth token"
 }
 
-while getopts 'h:H:U:T:P:' OPTION
+while getopts 'hH:U:P:' OPTION
 do
     case $OPTION in
         h)
@@ -61,6 +61,9 @@ do
     esac
 done
 
+# Set default values
+OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
+
 if ! which curl >/dev/null 2>&1
 then
     echo "curl is not installed."
@@ -68,7 +71,7 @@ then
 fi
 
 START=`date +%s`
-TOKEN=$(curl -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' 2>&1 | grep token|awk '{print $6}'|grep -o '".*"' | sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' 2>&1 | grep token|awk '{print $6}'|grep -o '".*"' | sed -n 's/.*"\([^"]*\)".*/\1/p')
 END=`date +%s`
 
 TIME=$((END-START))
