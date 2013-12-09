@@ -28,6 +28,9 @@ STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
 STATE_DEPENDENT=4
+REFRESH=0
+MAX_AGE=1800
+CACHEFILE='/dev/shm/check_nova-instance.tmp'
 
 usage ()
 {
@@ -41,9 +44,23 @@ usage ()
     echo " -N <server name>     Name of the monitoring instance"
     echo " -I <image name>      Name of the Glance image"
     echo " -F <flavor name>     Name of the Nova flavor"
+    echo " -r                   Refresh the cache"
 }
 
-while getopts 'hH:U:T:P:N:I:F:E:' OPTION
+output_result () {
+    # Output check result & refresh cache if requested
+    msg="$1"
+    retcode=$2
+    if [ $REFRESH -gt 0 ]
+    then 
+        echo "$msg">$CACHEFILE
+        echo $retcode>>$CACHEFILE
+    fi
+    echo "$msg"
+    exit $retcode
+}
+
+while getopts 'hH:U:T:P:N:I:F:E:r' OPTION
 do
     case $OPTION in
         h)
@@ -74,6 +91,9 @@ do
         F)
             export FLAVOR_NAME=$OPTARG
             ;;
+        r)
+            export REFRESH=1
+            ;;
         *)
             usage
             exit 1
@@ -81,14 +101,36 @@ do
     esac
 done
 
+
+
+# Read results from cache unless refresh requested
+
+if [ $REFRESH -eq 0 ] 
+then
+    if [ -f $CACHEFILE ]
+    then
+        FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$CACHEFILE")))
+        if [ $FILEAGE -gt $MAX_AGE ]; then
+            output_result "Cachefile is older than $MAX_AGE seconds!" $STATE_UNKNOWN
+        else
+            ARRAY=()
+            while read -r line; do
+                ARRAY+=("$line")
+            done < $CACHEFILE
+            output_result "${ARRAY[0]}" ${ARRAY[1]}
+        fi
+    else
+        output_result "Unable to open cachefile!" $STATE_UNKNOWN
+    fi
+fi
+
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
 ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8774/v2"}
 
 if ! which curl >/dev/null 2>&1
 then
-    echo "curl is not installed."
-    exit $STATE_UNKNOWN
+    output_result "curl is not installed." $STATE_UNKNOWN
 fi
 
 ##### TOKEN PART #####
@@ -102,8 +144,7 @@ TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |sed -e 's/
 TOKEN_TENANT=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"} ,"tenantId":"'$TENANT_ID'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 if [ -z "$TOKEN_TENANT" ]; then
-    echo "Unable to get a token from Keystone API"
-    exit $STATE_CRITICAL
+    output_result "Unable to get a token from Keystone API" $STATE_CRITICAL
 fi
 
 START=`date +%s`
@@ -134,7 +175,7 @@ do
 
     if [ "$INSTANCE_STATUS" == "ERROR" ];
     then
-        exit $STATE_CRITICAL
+        output_result "ERROR" $STATE_CRITICAL
     fi
 done
 
@@ -145,14 +186,11 @@ TIME=$((END-START))
 curl -s ${ENDPOINT_URL}/${TENANT_ID}/servers/${INSTANCE_ID} -X DELETE -H "X-Auth-Project-Id: $OS_TENANT" -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT"
 
 if [[ "$TIME" -gt "300" ]]; then
-    echo "Unable to spawn instance."
-    exit $STATE_CRITICAL
+    output_result "Unable to spawn instance." $STATE_CRITICAL
 else
     if [ "$TIME" -gt "180" ]; then
-        echo "Spawn image in 180 seconds, it's too long."
-        exit $STATE_WARNING
+        output_result "Spawn image in 180 seconds, it's too long." $STATE_WARNING
     else
-        echo "Nova instance spawned in $TIME seconds."
-        exit $STATE_OK
+        output_result "Nova instance spawned in $TIME seconds." $STATE_OK
     fi
 fi
