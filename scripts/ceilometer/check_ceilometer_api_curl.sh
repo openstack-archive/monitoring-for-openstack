@@ -34,7 +34,7 @@ usage ()
     echo "Usage: $0 [OPTIONS]"
     echo " -h                   Get help"
     echo " -H <Auth URL>        URL for obtaining an auth token. Ex: http://localhost:5000/v2.0"
-    echo " -E <Endpoint URL>    URL for ceilometer API. Ex: http://localhost:8777/v2"
+    echo " -E <Endpoint URL>    URL for ceilometer API. Ex: http://localhost:8777/v1"
     echo " -T <tenant>          Tenant to use to get an auth token"
     echo " -U <username>        Username to use to get an auth token"
     echo " -P <password>        Password to use ro get an auth token"
@@ -71,7 +71,7 @@ done
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8777/v2"}
+ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8777/v1"}
 
 if ! which curl >/dev/null 2>&1
 then

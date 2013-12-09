@@ -34,7 +34,7 @@ usage ()
     echo "Usage: $0 [OPTIONS]"
     echo " -h                   Get help"
     echo " -H <Auth URL>        URL for obtaining an auth token. Ex: http://localhost:5000/v2.0"
-    echo " -E <Endpoint URL>    URL for neutron API. Ex: http://localhost:9696/v2"
+    echo " -E <Endpoint URL>    URL for neutron API. Ex: http://localhost:9696/v2.0"
     echo " -T <admin tenant>    Admin tenant name to get an auth token"
     echo " -U <username>        Username to use to get an auth token"
     echo " -P <password>        Password to use ro get an auth token"
