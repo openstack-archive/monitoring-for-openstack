@@ -191,6 +191,6 @@ else
     if [ "$TIME" -gt "180" ]; then
         output_result "Spawn image in 180 seconds, it's too long." $STATE_WARNING
     else
-        output_result "Nova instance spawned in $TIME seconds." $STATE_OK
+        output_result "Nova instance spawned in $TIME seconds. | time=$TIME" $STATE_OK
     fi
 fi
