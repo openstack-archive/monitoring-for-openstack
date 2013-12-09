@@ -35,7 +35,7 @@ usage ()
     echo "No parameter : Just run the script"
 }
 
-while getopts 'h:H:U:T:P:' OPTION
+while getopts 'h' OPTION
 do
 case $OPTION in
         h)  

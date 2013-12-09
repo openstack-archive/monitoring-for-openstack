@@ -31,31 +31,15 @@ STATE_DEPENDENT=4
 usage ()
 {
     echo "Usage: $0 [OPTIONS]"
-    echo " -h               Get help"
-    echo " -H <Auth URL>    URL for obtaining an auth token"
-    echo " -U <username>    Username to use to get an auth token"
-    echo " -T <tenant>      Tenant to use to get an auth token"
-    echo " -P <password>    Password to use ro get an auth token"
+    echo " -h        Get help"
 }
 
-while getopts 'h:H:U:T:P:' OPTION
+while getopts 'h' OPTION
 do
     case $OPTION in
         h)
             usage
             exit 0
-            ;;
-        H)
-            export OS_AUTH_URL=$OPTARG
-            ;;
-        U)
-            export OS_USERNAME=$OPTARG
-            ;;
-        T)
-            export OS_TENANT_NAME=$OPTARG
-            ;;
-        P)
-            export OS_PASSWORD=$OPTARG
             ;;
         *)
             usage
@@ -63,7 +47,6 @@ do
             ;;
     esac
 done
-
 
 if ! which ceilometer >/dev/null 2>&1
 then
