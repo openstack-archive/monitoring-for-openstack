@@ -32,14 +32,15 @@ STATE_DEPENDENT=4
 usage ()
 {
     echo "Usage: $0 [OPTIONS]"
-    echo " -h               Get help"
-    echo " -H <Auth URL>      URL for obtaining an auth token. Ex: http://localhost"
-    echo " -T <admin tenant>  Admin tenant name to get an auth token"
-    echo " -U <username>      Username to use to get an auth token"
-    echo " -P <password>      Password to use ro get an auth token"
+    echo " -h                   Get help"
+    echo " -H <Auth URL>        URL for obtaining an auth token. Ex: http://localhost:5000/v2.0"
+    echo " -E <Endpoint URL>    URL for neutron API. Ex: http://localhost:9696/v2"
+    echo " -T <admin tenant>    Admin tenant name to get an auth token"
+    echo " -U <username>        Username to use to get an auth token"
+    echo " -P <password>        Password to use ro get an auth token"
 }
 
-while getopts 'h:H:U:T:P:' OPTION
+while getopts 'hH:U:T:P:E:' OPTION
 do
     case $OPTION in
         h)
@@ -48,6 +49,9 @@ do
             ;;
         H)
             export OS_AUTH_URL=$OPTARG
+            ;;
+        E)
+            export ENDPOINT_URL=$OPTARG
             ;;
         T)
             export OS_TENANT=$OPTARG
@@ -65,16 +69,20 @@ do
     esac
 done
 
+# Set default values
+OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
+ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:9696/v2.0"}
+
 if ! which curl >/dev/null 2>&1 || ! which netstat >/dev/null 2>&1
 then
     echo "curl or netstat are not installed."
     exit $STATE_UNKNOWN
 fi
 
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 # Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 if [ -z "$TOKEN" ]; then
     echo "Unable to get a token from Keystone API"
@@ -82,7 +90,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-NETWORKS=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" http://localhost:9696/v2.0/networks)
+NETWORKS=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" ${ENDPOINT_URL}/networks)
 END=`date +%s`
 
 TIME=$((END-START))
