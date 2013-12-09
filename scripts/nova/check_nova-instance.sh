@@ -30,7 +30,7 @@ STATE_UNKNOWN=3
 STATE_DEPENDENT=4
 REFRESH=0
 MAX_AGE=1800
-CACHEFILE='/dev/shm/check_nova-instance.tmp'
+CACHEFILE='/tmp/check_nova-instance.tmp'
 
 usage ()
 {
