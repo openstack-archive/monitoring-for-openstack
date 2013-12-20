@@ -27,6 +27,7 @@ STATE_OK=0
 STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
+DEAMON='neutron-server'
 STATE_DEPENDENT=4
 
 usage ()
@@ -79,10 +80,10 @@ then
     exit $STATE_UNKNOWN
 fi
 
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 
 # Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==2'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["tenants"][0]["id"]')
 
 if [ -z "$TOKEN" ]; then
     echo "Unable to get a token from Keystone API"
@@ -95,18 +96,29 @@ END=`date +%s`
 
 TIME=$((END-START))
 
-PID=$(ps -ef | grep neutron-server | grep python | awk {'print$2'} | head -n 1)
+PID=$(ps -ef | awk 'BEGIN {FS=" "}{if (/python [^ ]+$DEAMON/) {print $2 ; exit}}')
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $PID || test -z "$NETWORKS"
-then
-    echo "Neutron server is down."
-    exit $STATE_CRITICAL
+if [ -z $PID ]; then
+    echo "$DEAMON is not running."
+fi
+
+if [ "$(id -u)" != "0" ]; then
+    echo "$DEAMON is running but the script must be run as root"
+    exit $STATE_WARNING
 else
-    if [ "$TIME" -gt "10" ]; then
-        echo "Get networks after 10 seconds, it's too long."
-        exit $STATE_WARNING
+
+    #Need root to "run netstat -p"
+    if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $KEY || test -z "$NETWORKS"
+    then
+        echo "Neutron server is down."
+        exit $STATE_CRITICAL
     else
-        echo "Neutron server is up and running."
-        exit $STATE_OK
+        if [ "$TIME" -gt "10" ]; then
+            echo "Get networks after 10 seconds, it's too long."
+            exit $STATE_WARNING
+        else
+            echo "Neutron server is up and running."
+            exit $STATE_OK
+        fi
     fi
 fi

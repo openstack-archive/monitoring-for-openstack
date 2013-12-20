@@ -21,22 +21,23 @@
 #
 # Requirement: netstat
 #
-set -e
 
 STATE_OK=0
+STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
+DEAMON='nova-network'
 
 usage ()
 {
     echo "Usage: $0 [OPTIONS]"
-    echo " -h Get help"
+    echo " -h               Get help"
     echo "No parameter : Just run the script"
 }
 
 while getopts 'h' OPTION
 do
-case $OPTION in
+    case $OPTION in
         h)
             usage
             exit 0
@@ -50,17 +51,28 @@ done
 
 if ! which netstat >/dev/null 2>&1
 then
-echo "netstat is not installed."
+    echo "netstat is not installed."
     exit $STATE_UNKNOWN
 fi
 
-PID=$(ps -ef | awk 'BEGIN {FS=" "}{if (/python [^ ]+nova-network/) {print $2 ; exit}}')
+PID=$(ps -ef | awk 'BEGIN {FS=" "}{if (/python [^ ]+$DEAMON/) {print $2 ; exit}}')
 
-if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$PID"
-then
-echo "nova-network is not connected to AMQP."
-    exit $STATE_CRITICAL
+if [ -z $PID ]; then
+    echo "$DEAMON is not running."
 fi
 
-echo "nova-network is working."
+if [ "$(id -u)" != "0" ]; then
+    echo "$DEAMON is running but the script must be run as root"
+    exit $STATE_WARNING
+else
+
+    #Need root to "run netstat -p"
+    if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$KEY"
+    then
+        echo "$DEAMON is not connected to AMQP"
+        exit $STATE_CRITICAL
+    fi
+fi
+
+echo "$DEAMON is working."
 exit $STATE_OK

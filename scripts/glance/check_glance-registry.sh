@@ -24,8 +24,10 @@
 set -e
 
 STATE_OK=0
+STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
+DEAMON='glance-registry'
 
 usage ()
 {
@@ -56,11 +58,22 @@ fi
 
 PID=$(pgrep glance-registry | head -1)
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep glance) || test -z $PID
-then
-    echo "glance-registry is not started."
-    exit $STATE_CRITICAL
+if [ -z $PID ]; then
+    echo "$DEAMON is not running."
 fi
 
-echo "glance-registry is running."
+if [ "$(id -u)" != "0" ]; then
+    echo "$DEAMON is running but the script must be run as root"
+    exit $STATE_WARNING
+else
+
+    #Need root to "run netstat -p"
+    if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$KEY"
+    then
+        echo "$DEAMON is not connected to AMQP"
+        exit $STATE_CRITICAL
+    fi
+fi
+
+echo "$DEAMON is working."
 exit $STATE_OK
