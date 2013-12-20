@@ -62,6 +62,7 @@ fi
 PID=$(pidof -x $DEAMON)
 if [ -z $PID ]; then
     echo "$DEAMON is not running."
+    exit $STATE_CRITICAL
 fi
 
 if [ "$(id -u)" != "0" ]; then

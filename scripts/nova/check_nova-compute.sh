@@ -56,10 +56,11 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(ps -ef | awk 'BEGIN {FS=" "}{if (/python [^ ]+$DEAMON/) {print $2 ; exit}}')
+PID=$(ps -ef | awk "BEGIN {FS=\" \"}{if (/python [^ ]+${DEAMON}/) {print \$2 ; exit}}")
 
 if [ -z $PID ]; then
     echo "$DEAMON is not running."
+    exit $STATE_CRITICAL
 fi
 
 if [ "$(id -u)" != "0" ]; then

@@ -21,11 +21,12 @@
 #
 # Requirement: netstat
 #
-set -e
 
 STATE_OK=0
+STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
+DEAMON='heat-engine'
 
 usage ()
 {
@@ -54,13 +55,25 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(ps -ef | grep heat-engine | grep python | awk {'print$2'} | head -n 1)
+PID=$(ps -ef | awk "BEGIN {FS=\" \"}{if (/python [^ ]+$DEAMON/) {print \$2 ; exit}}")
 
-if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$PID"
-then
-    echo "heat-engine is not connected to AMQP."
+if [ -z $PID ]; then
+    echo "$DEAMON is not running."
     exit $STATE_CRITICAL
 fi
 
-echo "heat-engine is working."
+if [ "$(id -u)" != "0" ]; then
+    echo "$DEAMON is running but the script must be run as root"
+    exit $STATE_WARNING
+else
+
+    #Need root to "run netstat -p"
+    if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$KEY"
+    then
+        echo "$DEAMON is not connected to AMQP"
+        exit $STATE_CRITICAL
+    fi
+fi
+
+echo "$DEAMON is working."
 exit $STATE_OK

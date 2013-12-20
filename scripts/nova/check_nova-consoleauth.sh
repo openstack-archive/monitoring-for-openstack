@@ -26,7 +26,7 @@ STATE_OK=0
 STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
-DEAMON='
+DEAMON='nova-consoleauth'
 
 usage ()
 {
@@ -55,10 +55,11 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(ps -ef | awk 'BEGIN {FS=" "}{if (/python [^ ]+$DEAMON/) {print $2 ; exit}}')
+PID=$(ps -ef | awk "BEGIN {FS=\" \"}{if (/python [^ ]+${DEAMON}/) {print \$2 ; exit}}")
 
 if [ -z $PID ]; then
     echo "$DEAMON is not running."
+    exit $STATE_CRITICAL
 fi
 
 if [ "$(id -u)" != "0" ]; then

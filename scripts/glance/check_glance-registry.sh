@@ -56,10 +56,11 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(pgrep glance-registry | head -1)
+PID=$(pgrep $DEAMON | head -1)
 
 if [ -z $PID ]; then
     echo "$DEAMON is not running."
+    exit $STATE_CRITICAL
 fi
 
 if [ "$(id -u)" != "0" ]; then
