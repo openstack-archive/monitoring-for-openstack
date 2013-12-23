@@ -69,7 +69,7 @@ if [ "$(id -u)" != "0" ]; then
 else
 
     #Need root to "run netstat -p"
-    if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$KEY"
+    if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/${PID}\/python/) {print ; exit}}") || test -z "$KEY"
     then
         echo "$DEAMON is not connected to AMQP"
         exit $STATE_CRITICAL
