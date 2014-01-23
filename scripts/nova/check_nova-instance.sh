@@ -111,7 +111,7 @@ then
     then
         FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$CACHEFILE")))
         if [ $FILEAGE -gt $MAX_AGE ]; then
-            output_result "Cachefile is older than $MAX_AGE seconds!" $STATE_UNKNOWN
+            output_result "UNKNOWN - Cachefile is older than $MAX_AGE seconds!" $STATE_UNKNOWN
         else
             ARRAY=()
             while read -r line; do
@@ -120,7 +120,7 @@ then
             output_result "${ARRAY[0]}" ${ARRAY[1]}
         fi
     else
-        output_result "Unable to open cachefile!" $STATE_UNKNOWN
+        output_result "UNKNOWN - Unable to open cachefile!" $STATE_UNKNOWN
     fi
 fi
 
@@ -130,7 +130,7 @@ ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8774/v2"}
 
 if ! which curl >/dev/null 2>&1
 then
-    output_result "curl is not installed." $STATE_UNKNOWN
+    output_result "UNKNOWN - curl is not installed." $STATE_UNKNOWN
 fi
 
 ##### TOKEN PART #####
@@ -144,7 +144,7 @@ TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 
 TOKEN_TENANT=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"} ,"tenantId":"'$TENANT_ID'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 
 if [ -z "$TOKEN_TENANT" ]; then
-    output_result "Unable to get a token from Keystone API" $STATE_CRITICAL
+    output_result "CRITICAL - Unable to get a token from Keystone API" $STATE_CRITICAL
 fi
 
 START=`date +%s`
@@ -175,7 +175,7 @@ do
 
     if [ "$INSTANCE_STATUS" == "ERROR" ];
     then
-        output_result "ERROR" $STATE_CRITICAL
+        output_result "CRITICAL - Instance status ERROR" $STATE_CRITICAL
     fi
 done
 
@@ -186,11 +186,11 @@ TIME=$((END-START))
 curl -s ${ENDPOINT_URL}/${TENANT_ID}/servers/${INSTANCE_ID} -X DELETE -H "X-Auth-Project-Id: $OS_TENANT" -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT"
 
 if [[ "$TIME" -gt "300" ]]; then
-    output_result "Unable to spawn instance." $STATE_CRITICAL
+    output_result "CRITICAL - Unable to spawn instance." $STATE_CRITICAL
 else
     if [ "$TIME" -gt "180" ]; then
-        output_result "Spawn image in 180 seconds, it's too long." $STATE_WARNING
+        output_result "WARNING - Spawn image in 180 seconds, it's too long." $STATE_WARNING
     else
-        output_result "Nova instance spawned in $TIME seconds. | time=$TIME" $STATE_OK
+        output_result "OK - Nova instance spawned in $TIME seconds. | time=$TIME" $STATE_OK
     fi
 fi
