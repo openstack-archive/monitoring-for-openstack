@@ -60,6 +60,10 @@ do
     esac
 done
 
+#Default values
+CRITICAL=${CRITICAL:-"90"}
+WARNING=${WARNING:-"80"}
+
 if [ ! -x $RECON_BINARY ]
 then
     echo "CRITICAL: Unable to use the swift-recon binary"
