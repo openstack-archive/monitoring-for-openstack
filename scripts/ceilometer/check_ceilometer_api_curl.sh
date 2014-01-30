@@ -88,6 +88,12 @@ if [ -z "$TOKEN2" ]; then
     exit $STATE_CRITICAL
 fi
 
-RES=$(curl -s -H "X-Auth-Token: $TOKEN2" -H 'Content-Type: application/json' ${ENDPOINT_URL}/meters | grep -o user_id -c)
+RES=$(curl -s -H "X-Auth-Token: $TOKEN2" -H 'Content-Type: application/json' ${ENDPOINT_URL}/projects | grep -o project -c)                                                                                                       
 
-echo "Ceilometer API is working with $RES meters."
+if [ -z "$RES" ]; then
+    echo "Unable to get projects"
+    exit $STATE_CRITICAL
+else
+    echo "Ceilometer API is working." 
+fi
+
