@@ -2,7 +2,7 @@
 #
 # Nova create instance monitoring script for Sensu / Nagios
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2014 eNovance <licensing@enovance.com>
 #
 # Author: Gaëtan Trellu <gaetan.trellu@enovance.com>
 #
@@ -19,18 +19,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirement: curl
+# Requirement: curl python
 #
-set -e
 
+# Nagios/Sensu return codes
 STATE_OK=0
 STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
 STATE_DEPENDENT=4
+
+# Script options
 REFRESH=0
 MAX_AGE=1800
-CACHEFILE='/tmp/check_nova-instance.tmp'
+CACHEFILE="/tmp/check_nova-instance.tmp"
+TOKEN_FILE="/tmp/token"
+TENANT_ID_FILE="/tmp/tenant_id"
+IMAGE_ID_FILE="/tmp/image_id"
+FLAVOR_ID_FILE="/tmp/flavor_id"
+NOVA_ID_FILE="/tmp/nova_id"
+INSTANCE_STATUS_FILE="/tmp/instance_status"
+EXISTING_INSTANCE_ID_FILE="/tmp/instance_id"
 
 usage ()
 {
@@ -48,16 +57,18 @@ usage ()
 }
 
 output_result () {
-    # Output check result & refresh cache if requested
-    msg="$1"
-    retcode=$2
-    if [ $REFRESH -gt 0 ]
-    then 
-        echo "$msg">$CACHEFILE
-        echo $retcode>>$CACHEFILE
-    fi
-    echo "$msg"
-    exit $retcode
+	# Output check result & refresh cache if requested
+	MSG="$1"
+	RETCODE=$2
+	
+	if [ $REFRESH -gt 0 ]
+	then 
+		echo "$MSG" > $CACHEFILE
+		echo $RETCODE >> $CACHEFILE
+	fi
+	
+	echo "$MSG"
+	exit $RETCODE
 }
 
 while getopts 'hH:U:T:P:N:I:F:E:r' OPTION
@@ -101,96 +112,138 @@ do
     esac
 done
 
-
-
 # Read results from cache unless refresh requested
-
 if [ $REFRESH -eq 0 ] 
 then
-    if [ -f $CACHEFILE ]
-    then
-        FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$CACHEFILE")))
-        if [ $FILEAGE -gt $MAX_AGE ]; then
-            output_result "UNKNOWN - Cachefile is older than $MAX_AGE seconds!" $STATE_UNKNOWN
-        else
-            ARRAY=()
-            while read -r line; do
-                ARRAY+=("$line")
-            done < $CACHEFILE
-            output_result "${ARRAY[0]}" ${ARRAY[1]}
-        fi
-    else
-        output_result "UNKNOWN - Unable to open cachefile!" $STATE_UNKNOWN
-    fi
+	if [ -f $CACHEFILE ]
+	then
+		FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$CACHEFILE")))
+		if [ $FILEAGE -gt $MAX_AGE ]; then
+			output_result "UNKNOWN - Cachefile is older than $MAX_AGE seconds!" $STATE_UNKNOWN
+		else
+			ARRAY=()
+			while read -r LINE; do
+				ARRAY+=("$LINE")
+			done < $CACHEFILE
+			output_result "${ARRAY[0]}" ${ARRAY[1]}
+		fi
+	else
+		output_result "UNKNOWN - Unable to open cachefile !" $STATE_UNKNOWN
+	fi
 fi
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
 ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8774/v2"}
 
-if ! which curl >/dev/null 2>&1
+if ! which curl > /dev/null 2>&1
 then
-    output_result "UNKNOWN - curl is not installed." $STATE_UNKNOWN
+	output_result "UNKNOWN - curl is not installed." $STATE_UNKNOWN
 fi
 
-##### TOKEN PART #####
-# Get a token from Keystone
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT'"}}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
+# Get the token
+curl -s -d '{"auth": {"tenantName": "'$OS_TENANT'", "passwordCredentials": {"username": "'$OS_USERNAME'", "password": "'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' "$OS_AUTH_URL"/tokens | python -mjson.tool | awk -v var="\"id\": \"M" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $TOKEN_FILE
+if [ -s $TOKEN_FILE ]
+then
+	TOKEN=$(cat $TOKEN_FILE)
+else
+	output_result "CRITICAL - Unable to get a token from Keystone API" $STATE_CRITICAL
+fi
 
-# Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["tenants"][0]["id"]')
+# Get the tenant ID
+curl -s -H "X-Auth-Token: $TOKEN" "$OS_AUTH_URL"/tenants | python -mjson.tool | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $TENANT_ID_FILE
+if [ -s $TENANT_ID_FILE ]
+then
+	TENANT_ID=$(cat $TENANT_ID_FILE)
+else
+	output_result "CRITICAL - Unable to get tenant ID from Keystone API" $STATE_CRITICAL
+fi
 
-# Get a second token to avoid 401 error
-TOKEN_TENANT=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"} ,"tenantId":"'$TENANT_ID'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
-
-if [ -z "$TOKEN_TENANT" ]; then
-    output_result "CRITICAL - Unable to get a token from Keystone API" $STATE_CRITICAL
+# Check if an instance with the same name already exist
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers | python -mjson.tool | grep -B11 "$SERVER_NAME" | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $EXISTING_INSTANCE_ID_FILE
+if [ -s $EXISTING_INSTANCE_ID_FILE ]
+then
+	EXISTING_INSTANCE_ID=$(cat $EXISTING_INSTANCE_ID_FILE)
+	for TO_DELETE in $EXISTING_INSTANCE_ID
+	do
+		curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers/"$TO_DELETE" -X DELETE
+	done
 fi
 
 START=`date +%s`
 
-##### INSTANCE PART #####
 # Get image ID
-IMAGE_ID=$(curl -s -i ${ENDPOINT_URL}/${TENANT_ID}/images -X GET -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT" | awk '{ n=split($0,a,",") ; for (i=1; i<=n; i++) print a[i] }' | grep -B8 "$IMAGE_NAME" | awk -v var="id" '$0 ~ var { print $2 }' | sed 's/"//g')
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/images | python -mjson.tool | grep -B16 "$IMAGE_NAME" | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $IMAGE_ID_FILE
+if [ -s $IMAGE_ID_FILE ]
+then
+	IMAGE_ID=$(cat $IMAGE_ID_FILE)
+else
+	output_result "CRITICAL - Unable to get image ID from nova API" $STATE_CRITICAL
+fi
 
 # Get flavor ID
-FLAVOR_ID=$(curl -s -i ${ENDPOINT_URL}/${TENANT_ID}/flavors -X GET -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT" | awk '{ n=split($0,a,",") ; for (i=1; i<=n; i++) print a[i] }' | grep -A1 "$FLAVOR_NAME" | awk -v var="id" '$0 ~ var { print $2 }' | sed 's/"//g')
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/flavors | python -mjson.tool | grep -B11 "$FLAVOR_NAME" | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $FLAVOR_ID_FILE
+if [ -s $FLAVOR_ID_FILE ]
+then
+	FLAVOR_ID=$(cat $FLAVOR_ID_FILE)
+else
+	output_result "CRITICAL - Unable to get flavor ID from nova API" $STATE_CRITICAL
+fi
 
 # Spawn the new instance
-INSTANCE=$(curl -s -i ${ENDPOINT_URL}/${TENANT_ID}/servers -X POST -H "X-Auth-Project-Id: $OS_TENANT" -H "User-Agent: python-novaclient" -H "Content-Type: application/json" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT" -d '{"server": {"name": "'$SERVER_NAME'", "imageRef": "'$IMAGE_ID'", "flavorRef": "'$FLAVOR_ID'", "max_count": 1, "min_count": 1, "networks": [], "security_groups": [{"name": "default"}]}}')
-
-# Get the new instance ID
-INSTANCE_ID=$(echo $INSTANCE | awk  '{ n=split($0,a,",") ; for (i=1; i<=n; i++) print a[i] }' | awk -v var="id" '$0 ~ var { print $2 }' | sed 's/"//g')
+curl -s -d '{"server": {"name": "'$SERVER_NAME'", "imageRef": "'$IMAGE_ID'", "flavorRef": "'$FLAVOR_ID'", "max_count": 1, "min_count": 1}}' "$ENDPOINT_URL"/"$TENANT_ID"/servers -X POST -H "X-Auth-Token: $TOKEN" -H "Content-Type: application/json" | python -mjson.tool | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $NOVA_ID_FILE
+if [ -s $NOVA_ID_FILE ]
+then
+	INSTANCE_ID=$(cat $NOVA_ID_FILE)
+else
+	output_result "CRITICAL - Unable to get instance ID from nova API" $STATE_CRITICAL
+fi
 
 # Get the new instance status
-INSTANCE_STATUS=$(curl -s -i ${ENDPOINT_URL}/${TENANT_ID}/servers/${INSTANCE_ID} -X GET -H "X-Auth-Project-Id: $OS_TENANT" -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT" | awk '{ n=split($0,a,"{") ; for (i=1; i<=n; i++) print a[i] }' | awk -v var="status" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g')
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers/"$INSTANCE_ID" | python -mjson.tool | awk -v var="\"status\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $INSTANCE_STATUS_FILE
+if [ -s $INSTANCE_STATUS_FILE ]
+then
+	INSTANCE_STATUS=$(cat $INSTANCE_STATUS_FILE)
+else
+	output_result "CRITICAL - Unable to get instance status from nova API" $STATE_CRITICAL
+fi
 
 # While the instance is not in ACTIVE or ERROR state we check the status
-while [ "$INSTANCE_STATUS" != "ACTIVE"  ]
+while [ "$INSTANCE_STATUS" != "ACTIVE" ]
 do
-    sleep 5
+	sleep 5
    
-    # Check the instance status 
-    INSTANCE_STATUS=$(curl -s -i ${ENDPOINT_URL}/${TENANT_ID}/servers/${INSTANCE_ID} -X GET -H "X-Auth-Project-Id: $OS_TENANT" -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT" | awk '{ n=split($0,a,"{") ; for (i=1; i<=n; i++) print a[i] }' | awk -v var="status" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g')
+	# Check the instance status 
+	curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers/"$INSTANCE_ID" | python -mjson.tool | awk -v var="\"status\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $INSTANCE_STATUS_FILE
 
-    if [ "$INSTANCE_STATUS" == "ERROR" ];
-    then
-        output_result "CRITICAL - Instance status ERROR" $STATE_CRITICAL
-    fi
+	if [ -s $INSTANCE_STATUS_FILE ]
+	then
+		INSTANCE_STATUS=$(cat $INSTANCE_STATUS_FILE)
+	else
+		output_result "CRITICAL - Unable to get instance status from nova API" $STATE_CRITICAL
+	fi
+
+	if [ "$INSTANCE_STATUS" == "ERROR" ];
+	then
+		output_result "CRITICAL - Unable to spawn instance" $STATE_CRITICAL
+	fi
 done
 
 END=`date +%s`
 TIME=$((END-START))
 
 # Delete the new instance
-curl -s ${ENDPOINT_URL}/${TENANT_ID}/servers/${INSTANCE_ID} -X DELETE -H "X-Auth-Project-Id: $OS_TENANT" -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: $TOKEN_TENANT"
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers/"$INSTANCE_ID" -X DELETE
 
-if [[ "$TIME" -gt "300" ]]; then
-    output_result "CRITICAL - Unable to spawn instance." $STATE_CRITICAL
+# Cleaning
+rm $TOKEN_FILE $TENANT_ID_FILE $IMAGE_ID_FILE $FLAVOR_ID_FILE $NOVA_ID_FILE $INSTANCE_STATUS_FILE $EXISTING_INSTANCE_ID_FILE
+
+if [ $TIME -gt 300 ]; then
+	output_result "CRITICAL - Unable to spawn instance quickly" $STATE_CRITICAL
 else
-    if [ "$TIME" -gt "180" ]; then
-        output_result "WARNING - Spawn image in 180 seconds, it's too long." $STATE_WARNING
-    else
-        output_result "OK - Nova instance spawned in $TIME seconds. | time=$TIME" $STATE_OK
-    fi
+	if [ $TIME -gt 180 ]; then
+		output_result "WARNING - Spawn image in 180 seconds, it's too long" $STATE_WARNING
+	else
+		output_result "OK - Nova instance spawned in $TIME seconds | time=$TIME" $STATE_OK
+	fi
 fi
