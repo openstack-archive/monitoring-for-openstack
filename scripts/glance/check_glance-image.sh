@@ -2,7 +2,7 @@
 #
 # Glance Image Upload monitoring script for Sensu / Nagios
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2014 eNovance <licensing@enovance.com>
 #
 # Author: Gaëtan Trellu <gaetan.trellu@enovance.com>
 #
@@ -19,15 +19,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirement: curl
+# Requirement: curl python
 #
-set -e
 
+# Nagios/Sensu return codes
 STATE_OK=0
 STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
 STATE_DEPENDENT=4
+
+# Script options
+TOKEN_FILE="/tmp/token_check_glance"
+TENANT_ID_FILE="/tmp/tenant_id_check_glance"
+IMAGE_ID_FILE="/tmp/image_id_check_glance"
+GLANCE_API_VERSION="v1"
 
 usage ()
 {
@@ -39,6 +45,15 @@ usage ()
     echo " -U <username>        Username to use to get an auth token"
     echo " -P <password>        Password to use to get an auth token"
     echo " -N <name>            Name of the monitoring image"
+}
+
+output_result () {
+        # Output check result & refresh cache if requested
+        MSG="$1"
+        RETCODE=$2
+
+        echo "$MSG"
+        exit $RETCODE
 }
 
 while getopts 'hH:U:T:P:N:E:' OPTION
@@ -79,52 +94,58 @@ ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:9292/v1"}
 
 if ! which curl >/dev/null 2>&1
 then
-    echo "curl is not installed."
-    exit $STATE_UNKNOWN
+	output_result "UNKNOWN - curl is not installed." $STATE_UNKNOWN
 fi
 
-# Get a token from Keystone
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT'"}}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
+# Get the token
+curl -s -d '{"auth": {"tenantName": "'$OS_TENANT'", "passwordCredentials": {"username": "'$OS_USERNAME'", "password": "'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' "$OS_AUTH_URL"/tokens | python -mjson.tool | awk -v var="\"id\": \"M" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $TOKEN_FILE
+if [ -s $TOKEN_FILE ]
+then
+        TOKEN=$(cat $TOKEN_FILE)
+else
+        output_result "CRITICAL - Unable to get a token from Keystone API" $STATE_CRITICAL
+fi
 
-# Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["tenants"][0]["id"]')
-
-# Get a second tenant to avoid the 401 from Glance
-TOKEN_TENANT=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"} ,"tenantId":"'$TENANT_ID'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
-
-if [ -z "$TOKEN_TENANT" ]; then
-    echo "Unable to get a token from Keystone API"
-    exit $STATE_CRITICAL
+# Get the tenant ID
+curl -s -H "X-Auth-Token: $TOKEN" "$OS_AUTH_URL"/tenants | python -mjson.tool | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $TENANT_ID_FILE
+if [ -s $TENANT_ID_FILE ]
+then
+        TENANT_ID=$(cat $TENANT_ID_FILE)
+else
+        output_result "CRITICAL - Unable to get tenant ID from Keystone API" $STATE_CRITICAL
 fi
 
 START=`date +%s`
 
 # Generate an image file (1MB)
-( dd if=/dev/zero of=/tmp/${IMAGE_NAME}.img bs=1M count=1 ) > /dev/null 2>&1
+( dd if=/dev/zero of=/tmp/"$IMAGE_NAME".img bs=1M count=1 ) > /dev/null 2>&1
 
 # Upload the image
-IMAGE=$(curl -s -i -X POST -H "X-Auth-Token: $TOKEN_TENANT" -H "x-image-meta-container_format: bare" -H "Transfer-Encoding: chunked" -H "User-Agent: python-glanceclient" -H "Content-Type: application/octet-stream" -H "x-image-meta-disk_format: qcow2" -H "x-image-meta-name: $IMAGE_NAME" -d "<open file /tmp/${IMAGE_NAME}.img, mode 'r' at 0x7fc48f5b4150>" ${ENDPOINT_URL}/images)
+curl -s -d "<open file /tmp/"$IMAGE_NAME".img, mode 'r' at 0x7fc48f5b4151>" -X POST -H "X-Auth-Token: $TOKEN" -H "x-image-meta-container_format: bare" -H "Transfer-Encoding: chunked" -H "User-Agent: python-glanceclient" -H "Content-Type: application/octet-stream" -H "x-image-meta-disk_format: qcow2" -H "x-image-meta-name: $IMAGE_NAME" "$ENDPOINT_URL"/"$GLANCE_API_VERSION"/images | python -mjson.tool | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $IMAGE_ID_FILE
+if [ -s $IMAGE_ID_FILE ]
+then
+        IMAGE_ID=$(cat $IMAGE_ID_FILE)
+else
+        output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
+fi
 
-# Get the image ID
-IMAGE_ID=$(echo $IMAGE | awk  '{ n=split($0,a,",") ; for (i=1; i<=n; i++) print a[i] }' | awk -v var="id" '$0 ~ var { print $2 }' | sed 's/"//g')
-
-rm -f /tmp/${IMAGE_NAME}.img
+rm -f /tmp/"$IMAGE_NAME".img
 
 # Delete the image
-curl -s -X DELETE -H "X-Auth-Token: $TOKEN_TENANT" -H "Content-Type: application/octet-stream" -H "User-Agent: python-glanceclient" ${ENDPOINT_URL}/images/${IMAGE_ID} > /dev/null 2>&1
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$GLANCE_API_VERSION"/images/"$IMAGE_ID" -X DELETE > /dev/null 2>&1
+
+# Cleaning
+rm $TOKEN_FILE $TENANT_ID_FILE $IMAGE_ID_FILE 
 
 END=`date +%s`
 TIME=$((END-START))
 
-if [[ "$TIME" -gt "60" ]]; then
-    echo "Unable to upload image"
-    exit $STATE_CRITICAL
+if [ $TIME -gt 60 ]; then
+	output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
 else
-    if [ "$TIME" -gt "10" ]; then
-        echo "Upload image in 10 seconds, it's too long."
-        exit $STATE_WARNING
-    else
-        echo "Glance image uploaded in $TIME seconds."
-        exit $STATE_OK
-    fi
+	if [ "$TIME" -gt "10" ]; then
+        	output_result "WARNING - Upload image in 10 seconds, it's too long" $STATE_WARNING
+	else
+		output_result "OK - Glance image uploaded in $TIME seconds" $STATE_OK
+	fi
 fi
