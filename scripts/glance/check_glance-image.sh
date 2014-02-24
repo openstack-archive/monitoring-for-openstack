@@ -29,10 +29,13 @@ STATE_CRITICAL=2
 STATE_UNKNOWN=3
 STATE_DEPENDENT=4
 
+# Random string with 5 chars
+RANDOM_STRING=$(date +%s | sha256sum | base64 | head -c5 ; echo)
+
 # Script options
-TOKEN_FILE="/tmp/token_check_glance"
-TENANT_ID_FILE="/tmp/tenant_id_check_glance"
-IMAGE_ID_FILE="/tmp/image_id_check_glance"
+TOKEN_FILE="/tmp/token_check_glance_$RANDOM_STRING"
+TENANT_ID_FILE="/tmp/tenant_id_check_glance_$RANDOM_STRING"
+IMAGE_ID_FILE="/tmp/image_id_check_glance_$RANDOM_STRING"
 GLANCE_API_VERSION="v1"
 
 usage ()
@@ -94,7 +97,7 @@ ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:9292/v1"}
 
 if ! which curl >/dev/null 2>&1
 then
-	output_result "UNKNOWN - curl is not installed." $STATE_UNKNOWN
+    output_result "UNKNOWN - curl is not installed." $STATE_UNKNOWN
 fi
 
 # Get the token
@@ -135,17 +138,18 @@ rm -f /tmp/"$IMAGE_NAME".img
 curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$GLANCE_API_VERSION"/images/"$IMAGE_ID" -X DELETE > /dev/null 2>&1
 
 # Cleaning
-rm $TOKEN_FILE $TENANT_ID_FILE $IMAGE_ID_FILE 
+#rm $TOKEN_FILE $TENANT_ID_FILE $IMAGE_ID_FILE 
 
 END=`date +%s`
 TIME=$((END-START))
 
 if [ $TIME -gt 60 ]; then
-	output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
+    output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
 else
-	if [ "$TIME" -gt "10" ]; then
-        	output_result "WARNING - Upload image in 10 seconds, it's too long" $STATE_WARNING
-	else
-		output_result "OK - Glance image uploaded in $TIME seconds" $STATE_OK
-	fi
+    if [ "$TIME" -gt "20" ]; then
+            output_result "WARNING - Upload image in 20 seconds, it's too long" $STATE_WARNING
+    else
+        output_result "OK - Glance image uploaded in $TIME seconds" $STATE_OK
+    fi
 fi
+
