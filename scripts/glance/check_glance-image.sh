@@ -30,7 +30,7 @@ STATE_UNKNOWN=3
 STATE_DEPENDENT=4
 
 # Random string with 5 chars
-RANDOM_STRING=$(date +%s | sha256sum | base64 | head -c5 ; echo)
+RANDOM_STRING=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 5 | head -n 1)
 
 # Script options
 TOKEN_FILE="/tmp/token_check_glance_$RANDOM_STRING"
