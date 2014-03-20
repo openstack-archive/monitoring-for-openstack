@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirement: curl
+# Requirement: curl, bc
 #
 set -e
 
@@ -79,6 +79,12 @@ then
     exit $STATE_UNKNOWN
 fi
 
+if ! which bc >/dev/null 2>&1
+then
+    echo "bc is not installed."
+    exit $STATE_UNKNOWN
+fi
+
 # Get a token from Keystone
 TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT'"}}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 
@@ -103,21 +109,21 @@ if [ -z "$TOKEN2" ]; then
     exit $STATE_CRITICAL
 fi
 
-START=`date +%s`
+START=`date +%s.%N`
 IMAGES=$(curl -s -H "X-Auth-Token: $TOKEN2" -H 'Content-Type: application/json' -H 'User-Agent: python-glanceclient' ${ENDPOINT_URL}/images/detail?sort_key=name&sort_dir=asc&limit=100)
 N_IMAGES=$(echo $IMAGES |  grep -Po '"name":.*?[^\\]",'| wc -l)
-END=`date +%s`
-TIME=$((END-START))
+END=`date +%s.%N`
+TIME=`echo ${END} - ${START} | bc`
 
 if [[ ! "$IMAGES" == *status* ]]; then
     echo "Unable to list images"
     exit $STATE_CRITICAL
 else
-    if [ "$TIME" -gt "10" ]; then
-        echo "Get images after 10 seconds, it's too long."
+    if [ `echo ${TIME}'>'10 | bc -l` -gt 0 ]; then
+        echo "Get images took 10 seconds, it's too long.|response_time=${TIME}"
         exit $STATE_WARNING
     else
-        echo "Get images, Glance API is working: list $N_IMAGES images in $TIME seconds."
+        echo "Get images, Glance API is working: list $N_IMAGES images in $TIME seconds.|response_time=${TIME}"
         exit $STATE_OK
     fi
 fi
