@@ -109,7 +109,7 @@ if [ "$(id -u)" != "0" ]; then
 else
 
     #Need root to "run netstat -p"
-    if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z $KEY || test -z "$NETWORKS"
+    if ! KEY=$(netstat -epta 2>/dev/null | grep $PID 2>/dev/null | grep amqp) || test -z "$KEY" || test -z "$NETWORKS"
     then
         echo "Neutron server is down."
         exit $STATE_CRITICAL
