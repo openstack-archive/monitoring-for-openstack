@@ -96,7 +96,7 @@ END=`date +%s`
 
 TIME=$((END-START))
 
-PID=$(ps -ef | awk "BEGIN {FS=\" \"}{if (/python [^ ]+${DEAMON}/) {print \$2 ; exit}}")
+PID=$(ps -ef | awk "BEGIN {FS=\" \"}{if (/python(2.7)? [^ ]+${DEAMON}/) {print \$2 ; exit}}")
 
 if [ -z $PID ]; then
     echo "$DEAMON is not running."
