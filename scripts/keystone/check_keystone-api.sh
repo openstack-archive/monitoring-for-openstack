@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Requirement: curl
+# Requirement: curl, bc
 #
 set -e
 
@@ -70,21 +70,26 @@ then
     exit $STATE_UNKNOWN
 fi
 
-START=`date +%s`
-TOKEN=$(curl -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' 2>&1 | grep token|awk '{print $6}'|grep -o '".*"' | sed -n 's/.*"\([^"]*\)".*/\1/p')
-END=`date +%s`
+if ! which bc >/dev/null 2>&1
+then
+    echo "bc is not installed."
+    exit $STATE_UNKNOWN
+fi
 
-TIME=$((END-START))
+START=`date +%s.%N`
+TOKEN=$(curl -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' 2>&1 | grep token|awk '{print $6}'|grep -o '".*"' | sed -n 's/.*"\([^"]*\)".*/\1/p')
+END=`date +%s.%N`
+TIME=`echo ${END} - ${START} | bc`
 
 if [ -z "$TOKEN" ]; then
     echo "Unable to get a token"
     exit $STATE_CRITICAL
 else
-    if [ $TIME -gt 10 ]; then
-        echo "Get a token after 10 seconds, it's too long."
+    if [ `echo ${TIME}'>'10 | bc -l` -gt 0 ]; then
+        echo "Got a token after 10 seconds, it's too long.|response_time=${TIME}"
         exit $STATE_WARNING
     else
-        echo "Got a token, Keystone API is working."
+        echo "Got a token, Keystone API is working.|response_time=${TIME}"
         exit $STATE_OK
     fi
 fi
