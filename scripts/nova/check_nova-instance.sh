@@ -112,6 +112,12 @@ do
     esac
 done
 
+if [ -z "$SERVER_NAME" ]
+then
+	echo "SERVER_NAME not set."
+	exit 1
+fi
+
 # Read results from cache unless refresh requested
 if [ $REFRESH -eq 0 ] 
 then
