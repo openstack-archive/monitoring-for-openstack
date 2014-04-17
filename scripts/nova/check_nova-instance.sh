@@ -166,7 +166,7 @@ else
 fi
 
 # Check if an instance with the same name already exist
-curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers | python -mjson.tool | grep -B11 "$SERVER_NAME" | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $EXISTING_INSTANCE_ID_FILE
+curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers | python -mjson.tool | grep -B11 "\"name\": \"SERVER_NAME\"" | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $EXISTING_INSTANCE_ID_FILE
 if [ -s $EXISTING_INSTANCE_ID_FILE ]
 then
 	EXISTING_INSTANCE_ID=$(cat $EXISTING_INSTANCE_ID_FILE)
