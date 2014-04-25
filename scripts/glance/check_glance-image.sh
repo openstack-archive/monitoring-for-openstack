@@ -125,9 +125,6 @@ rm -f /tmp/"$IMAGE_NAME".img
 # Delete the image
 curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$GLANCE_API_VERSION"/images/"$IMAGE_ID" -X DELETE > /dev/null 2>&1
 
-# Cleaning
-rm $TOKEN_FILE $TENANT_ID_FILE $IMAGE_ID_FILE 
-
 END=`date +%s`
 TIME=$((END-START))
 
