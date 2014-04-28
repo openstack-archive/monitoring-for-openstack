@@ -148,20 +148,16 @@ then
 fi
 
 # Get the token
-curl -s -d '{"auth": {"tenantName": "'$OS_TENANT'", "passwordCredentials": {"username": "'$OS_USERNAME'", "password": "'$OS_PASSWORD'"}}}' -H 'Content-type: application/json' "$OS_AUTH_URL"/tokens | python -mjson.tool | awk -v var="\"id\": \"M" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $TOKEN_FILE
-if [ -s $TOKEN_FILE ]
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
+if [ -z $TOKEN ]
 then
-	TOKEN=$(cat $TOKEN_FILE)
-else
 	output_result "CRITICAL - Unable to get a token from Keystone API" $STATE_CRITICAL
 fi
 
 # Get the tenant ID
-curl -s -H "X-Auth-Token: $TOKEN" "$OS_AUTH_URL"/tenants | python -mjson.tool | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $TENANT_ID_FILE
-if [ -s $TENANT_ID_FILE ]
+TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["tenants"][0]["id"]')
+if [ -z $TENANT_ID ]
 then
-	TENANT_ID=$(cat $TENANT_ID_FILE)
-else
 	output_result "CRITICAL - Unable to get tenant ID from Keystone API" $STATE_CRITICAL
 fi
 
@@ -242,7 +238,7 @@ TIME=$((END-START))
 curl -s -H "X-Auth-Token: $TOKEN" "$ENDPOINT_URL"/"$TENANT_ID"/servers/"$INSTANCE_ID" -X DELETE
 
 # Cleaning
-rm $TOKEN_FILE $TENANT_ID_FILE $IMAGE_ID_FILE $FLAVOR_ID_FILE $NOVA_ID_FILE $INSTANCE_STATUS_FILE $EXISTING_INSTANCE_ID_FILE
+rm $IMAGE_ID_FILE $FLAVOR_ID_FILE $NOVA_ID_FILE $INSTANCE_STATUS_FILE $EXISTING_INSTANCE_ID_FILE
 
 if [ $TIME -gt 300 ]; then
 	output_result "CRITICAL - Unable to spawn instance quickly" $STATE_CRITICAL
