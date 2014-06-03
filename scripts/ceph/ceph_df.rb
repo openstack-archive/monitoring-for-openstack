@@ -2,7 +2,7 @@
 #
 # Simple ceph df check (using ceph commands)
 #
-# Copyright (C) 2013 eNovance SAS <licensing@enovance.com>
+# Copyright (C) 2013-2014 eNovance SAS <licensing@enovance.com>
 #
 # Author: Sebastien Badia <sebastien.badia@enovance.com>
 #
@@ -57,10 +57,10 @@ if ( used + avail ) != total
   exit WARNING
 end
 
-if (avail >= per(crit_percent,total))
+if (avail < per(crit_percent,total))
   puts "[ERR] Ceph df avail. critical #{remaning(avail,total)}"
   exit CRITICAL
-elsif (avail >= per(warn_percent,total))
+elsif (avail < per(warn_percent,total))
   puts "[WARN] Ceph df avail. warning #{remaning(avail,total)}"
   exit WARNING
 else
