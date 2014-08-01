@@ -60,7 +60,7 @@ fi
 
 
 PID=$(pidof -x $DAEMON || true)
-if [ -z $PID ]; then
+if [ -z "$PID" ]; then
     echo "$DAEMON is not running."
     exit $STATE_CRITICAL
 fi
