@@ -2,7 +2,7 @@
 
 # Cinder API monitoring script
 
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2013-2014 eNovance <licensing@enovance.com>
 #
 # Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
@@ -50,7 +50,7 @@ do
             export OS_AUTH_URL=$OPTARG
             ;;
         T)
-            export OS_TENANT=$OPTARG
+            export OS_TENANT_NAME=$OPTARG
             ;;
         U)
             export OS_USERNAME=$OPTARG
@@ -72,7 +72,7 @@ then
 fi
 
 # Get a token from Keystone
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 # Use the token to get a tenant ID. By default, it takes the second tenant
 TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==1'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
@@ -83,7 +83,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-QUOTAS=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:8776/v1/${TENANT_ID}/os-quota-sets/${OS_TENANT}/defaults | grep "gigabytes")
+QUOTAS=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:8776/v1/${TENANT_ID}/os-quota-sets/${OS_TENANT_NAME}/defaults | grep "gigabytes")
 END=`date +%s`
 
 TIME=$((END-START))
