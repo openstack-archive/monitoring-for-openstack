@@ -40,3 +40,25 @@ check_running_and_amqp_connected () {
     echo "$DAEMON is not connected to AMQP"
     exit $STATE_CRITICAL
 }
+
+show_usage () {
+    echo "Usage: $0 [OPTIONS]"
+    echo " -h               Get help"
+    echo "No parameter : Just run the script"
+}
+
+check_usage () {
+    while getopts 'h' OPTION
+    do
+        case $OPTION in
+            h)
+                show_usage
+                exit 0
+                ;;
+            *)
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
+}

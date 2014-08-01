@@ -25,25 +25,5 @@ set -e
 . `dirname $0`/functions.sh
 DAEMON='ceilometer-agent-central'
 
-usage ()
-{
-    echo "Usage: $0 [OPTIONS]"
-    echo " -h               Get help"
-    echo "No parameter : Just run the script"
-}
-
-while getopts 'h' OPTION
-do
-    case $OPTION in
-        h)
-            usage
-            exit 0
-            ;;
-        *)
-            usage
-            exit 1
-            ;;
-    esac
-done
-
+check_usage
 check_running_and_amqp_connected $DAEMON
