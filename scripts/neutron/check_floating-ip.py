@@ -71,6 +71,7 @@
 # 
 # * `./check_floating-ip.py --auth_url $OS_AUTH_URL --username $OS_USERNAME --tenant $OS_TENANT_NAME --password $OS_PASSWORD --floating_ip='172\.16\.18\.[12][0-9][0-9]' --force_delete`
 
+import os
 import sys
 import argparse
 from keystoneclient.v2_0 import client
@@ -223,21 +224,21 @@ def fip_type(string):
 
 
 parser = argparse.ArgumentParser(
-    description='Check an Floaiting ip creation. Note that\'s it\'s able to delete *all* floating ips from a account, so ensure that nothing important is running on the specified account.')
+    description='Check an Floating ip creation. Note that\'s it\'s able to delete *all* floating ips from a account, so ensure that nothing important is running on the specified account.')
 parser.add_argument('--auth_url', metavar='URL', type=str,
-                    required=True,
+                    default=os.getenv('OS_AUTH_URL'),
                     help='Keystone URL')
 
 parser.add_argument('--username', metavar='username', type=str,
-                    required=True,
+                    default=os.getenv('OS_USERNAME'),
                     help='username to use for authentication')
 
 parser.add_argument('--password', metavar='password', type=str,
-                    required=True,
+                    default=os.getenv('OS_PASSWORD'),
                     help='password to use for authentication')
 
 parser.add_argument('--tenant', metavar='tenant', type=str,
-                    required=True,
+                    default=os.getenv('OS_TENANT_NAME'),
                     help='tenant name to use for authentication')
 
 parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
@@ -304,7 +305,8 @@ util = Novautils(neutron_client, nova_client.tenant_id)
 # Initiate the first connection and catch error.
 util.check_connection()
 
-util.check_existing_floatingip(args.floating_ip, args.force_delete)
+if args.floating_ip:
+    util.check_existing_floatingip(args.floating_ip, args.force_delete)
 util.get_network_id(args.ext_router_name)
 util.create_floating_ip()
 util.delete_floating_ip()

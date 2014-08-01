@@ -38,7 +38,7 @@
 # * `--region_name`: Region to select for authentication
 # * `--endpoint_url`: Override the catalog endpoint
 # * `--endpoint_type`: When not overriding, which type to use in the catalog.  Public by default.
-# * `--image_name`: Image name to use (cirros-0.3.0-x86_64-disk by defalut)
+# * `--image_name`: Image name to use (cirros by default)
 # * `--flavor_name`: Flavor name to use (m1.tiny by default)
 # * `--instance_name`: Instance name to use (monitoring_test by default)
 # * `--force_delete`: If matching instances are found delete them and add a notification in the message instead of getting out in critical state
@@ -72,6 +72,7 @@
 #     * the command won't be run more that once every 28 minutes (-i 1680);
 # 
 
+import os
 import sys
 import argparse
 from novaclient.client import Client
@@ -86,7 +87,7 @@ STATE_WARNING = 1
 STATE_CRITICAL = 2
 STATE_UNKNOWN = 3
 
-default_image_name = 'cirros-0.3.0-x86_64-disk'
+default_image_name = 'cirros'
 default_flavor_name = 'm1.tiny'
 default_instance_name = 'monitoring_test'
 
@@ -287,19 +288,19 @@ class Novautils:
 parser = argparse.ArgumentParser(
     description='Check an OpenStack Keystone server.')
 parser.add_argument('--auth_url', metavar='URL', type=str,
-                    required=True,
+                    default=os.getenv('OS_AUTH_URL'),
                     help='Keystone URL')
 
 parser.add_argument('--username', metavar='username', type=str,
-                    required=True,
+                    default=os.getenv('OS_USERNAME'),
                     help='username to use for authentication')
 
 parser.add_argument('--password', metavar='password', type=str,
-                    required=True,
+                    default=os.getenv('OS_PASSWORD'),
                     help='password to use for authentication')
 
 parser.add_argument('--tenant', metavar='tenant', type=str,
-                    required=True,
+                    default=os.getenv('OS_TENANT_NAME'),
                     help='tenant name to use for authentication')
 
 parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,
