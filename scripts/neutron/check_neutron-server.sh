@@ -80,7 +80,7 @@ done
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service network|grep publicURL|cut -d'|' -f3)"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service network|grep publicURL|cut -d'|' -f3|sed 's/\s*//g')"}
 AMQP_PORT=${AMQP_PORT:-5672}
 
 if ! which curl >/dev/null 2>&1 || ! which netstat >/dev/null 2>&1 || ! which python >/dev/null 2>&1
@@ -90,7 +90,7 @@ then
 fi
 
 # Try to get an auth token from keystone API
-KS_RESP=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' || true)
+KS_RESP=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' || :)
 if [ ! -z "${KS_RESP}" ]; then
     TOKEN=$(echo ${KS_RESP} | python -c "import sys; import json; data = json.loads(sys.stdin.readline()); print data.get('access',{}).get('token',{}).get('id',{})")
     if [ "${TOKEN}" = "{}" ]; then
@@ -104,7 +104,7 @@ fi
 
 # Check Neutron API
 START=$(date +%s)
-API_RESP=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" ${ENDPOINT_URL}/networks || true)
+API_RESP=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" ${ENDPOINT_URL}/v2.0/networks.json || :)
 END=$(date +%s)
 if [ ! -z "${API_RESP}" ]; then
     NETWORKS=$(echo ${API_RESP} | python -c "import sys; import json; data = json.loads(sys.stdin.readline()); print data.get('networks',{})")
