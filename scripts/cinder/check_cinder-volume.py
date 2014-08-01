@@ -72,6 +72,7 @@
 # 
 # * `cache_check.py -c "check_cinder-volume.py --auth_url $OS_AUTH_URL --username $OS_USERNAME --tenant $OS_TENANT_NAME --password $OS_PASSWORD"`
 # 
+import os
 import sys
 import argparse
 from cinderclient.client import Client
@@ -245,19 +246,19 @@ class Novautils:
 parser = argparse.ArgumentParser(
     description='Check an OpenStack Keystone server.')
 parser.add_argument('--auth_url', metavar='URL', type=str,
-                    required=True,
+                    default=os.getenv('OS_AUTH_URL'),
                     help='Keystone URL')
 
 parser.add_argument('--username', metavar='username', type=str,
-                    required=True,
+                    default=os.getenv('OS_USERNAME'),
                     help='username to use for authentication')
 
 parser.add_argument('--password', metavar='password', type=str,
-                    required=True,
+                    default=os.getenv('OS_PASSWORD'),
                     help='password to use for authentication')
 
 parser.add_argument('--tenant', metavar='tenant', type=str,
-                    required=True,
+                    default=os.getenv('OS_TENANT_NAME'),
                     help='tenant name to use for authentication')
 
 parser.add_argument('--endpoint_url', metavar='endpoint_url', type=str,

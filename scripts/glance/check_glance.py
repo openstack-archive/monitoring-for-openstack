@@ -26,9 +26,6 @@ import sys
 import os
 import argparse
 from glanceclient import client as gclient
-from glance.common import exception
-from glance.common import utils
-from glance import version
 
 STATE_OK = 0
 STATE_WARNING = 1
@@ -38,20 +35,17 @@ STATE_UNKNOWN = 3
 def collect_args():
 
   parser = argparse.ArgumentParser(description='Check an OpenStack glance server.')
-  parser.add_argument('--host', metavar='host', type=str,
-        required=True,
-        help='Glance host')
   parser.add_argument('--auth_url', metavar='URL', type=str,
-        required=True,
+        default=os.getenv('OS_AUTH_URL'),
         help='Keystone URL')
   parser.add_argument('--username', metavar='username', type=str,
-        required=True,
+        default=os.getenv('OS_USERNAME'),
         help='username to use for authentication')
   parser.add_argument('--password', metavar='password', type=str,
-        required=True,
+        default=os.getenv('OS_PASSWORD'),
         help='password to use for authentication')
   parser.add_argument('--tenant', metavar='tenant', type=str,
-        required=True,
+        default=os.getenv('OS_TENANT_NAME'),
         help='tenant name to use for authentication')
   parser.add_argument('--req_count', metavar='numberImages', type=str,
         required=False,
@@ -116,10 +110,6 @@ def check_glance(c,args):
 
 if __name__ == '__main__':
   args = collect_args().parse_args()
-  os.environ['OS_USERNAME'] = args.username
-  os.environ['OS_AUTH_URL'] = args.auth_url
-  os.environ['OS_TENANT_NAME'] = args.tenant
-  os.environ['OS_PASSWORD'] = args.password
   try:
     c = gclient.Client('1','')
     sys.exit(check_glance(c,args))
