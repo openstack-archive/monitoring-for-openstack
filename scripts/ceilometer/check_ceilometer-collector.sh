@@ -22,12 +22,9 @@
 
 set -e
 
-STATE_OK=0
-STATE_WARNING=1
-STATE_CRITICAL=2
-STATE_UNKNOWN=3
+. `dirname $0`/functions.sh
 DAEMON='ceilometer-collector'
-STATE_DEPENDENT=4
+
 
 usage ()
 {
@@ -59,11 +56,7 @@ fi
 
 
 
-PID=$(pidof -x $DAEMON)
-if [ -z "$PID" ]; then
-    echo "$DAEMON is not running."
-    exit $STATE_CRITICAL
-fi
+check_running $DAEMON
 
 if [ "$(id -u)" != "0" ]; then
     echo "$DAEMON is running but the script must be run as root"
