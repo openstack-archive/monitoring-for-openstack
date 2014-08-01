@@ -33,13 +33,14 @@ usage ()
 {
     echo "Usage: $0 [OPTIONS]"
     echo " -h               Get help"
-    echo " -H <Auth URL>    URL for obtaining an auth token. Ex: http://localhost"
+    echo " -H <Auth URL>    URL for obtaining an auth token. Ex: http://localhost:5000/v2.0"
+    echo " -E <Endpoint URL>    URL for cinder API. Ex: http://localhost:8776/v1/"
     echo " -T <tenant>      Tenant to use to get an auth token"
     echo " -U <username>    Username to use to get an auth token"
     echo " -P <password>    Password to use ro get an auth token"
 }
 
-while getopts 'h:H:U:T:P:' OPTION
+while getopts 'h:H:E:U:T:P:' OPTION
 do
     case $OPTION in
         h)
@@ -48,6 +49,9 @@ do
             ;;
         H)
             export OS_AUTH_URL=$OPTARG
+            ;;
+        E)
+            export ENDPOINT_URL=$OPTARG
             ;;
         T)
             export OS_TENANT_NAME=$OPTARG
@@ -65,6 +69,10 @@ do
     esac
 done
 
+# Set default values
+OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service volume|grep publicURL|cut -d'|' -f3|sed 's/\s*//g')"}
+
 if ! which curl >/dev/null 2>&1
 then
     echo "curl is not installed."
@@ -72,10 +80,7 @@ then
 fi
 
 # Get a token from Keystone
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}:5000/v2.0/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
-
-# Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:5000/v2.0/tenants |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|grep id|awk 'NR==1'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' |sed -e 's/[{}]/''/g' | awk -v k="text" '{n=split($0,a,","); for (i=1; i<=n; i++) print a[i]}'|awk 'NR==3'|awk '{print $2}'|sed -n 's/.*"\([^"]*\)".*/\1/p')
 
 if [ -z "$TOKEN" ]; then
     echo "Unable to get a token from Keystone API"
@@ -83,7 +88,7 @@ if [ -z "$TOKEN" ]; then
 fi
 
 START=`date +%s`
-QUOTAS=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}:8776/v1/${TENANT_ID}/os-quota-sets/${OS_TENANT_NAME}/defaults | grep "gigabytes")
+QUOTAS=$(curl -s -H "X-Auth-Token: $TOKEN" "${ENDPOINT_URL}/os-quota-sets/${OS_TENANT_NAME}/defaults" | grep "gigabytes")
 END=`date +%s`
 
 TIME=$((END-START))
