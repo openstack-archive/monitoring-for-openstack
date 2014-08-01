@@ -71,7 +71,7 @@ done
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8777/v1"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service metering|grep publicURL|cut -d'|' -f3)"}
 
 if ! which curl >/dev/null 2>&1
 then
@@ -88,7 +88,7 @@ if [ -z "$TOKEN2" ]; then
     exit $STATE_CRITICAL
 fi
 
-RES=$(curl -s -H "X-Auth-Token: $TOKEN2" -H 'Content-Type: application/json' ${ENDPOINT_URL}/projects | grep -o project -c)                                                                                                       
+RES=$(curl -s -H "X-Auth-Token: $TOKEN2" -H 'Content-Type: application/json' ${ENDPOINT_URL}/projects | grep -o project -c)
 
 if [ -z "$RES" ]; then
     echo "Unable to get projects"

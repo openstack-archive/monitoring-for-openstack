@@ -80,7 +80,7 @@ done
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:9696/v2.0"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service network|grep publicURL|cut -d'|' -f3)"}
 AMQP_PORT=${AMQP_PORT:-5672}
 
 if ! which curl >/dev/null 2>&1 || ! which netstat >/dev/null 2>&1 || ! which python >/dev/null 2>&1

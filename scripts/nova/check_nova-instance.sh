@@ -140,7 +140,7 @@ fi
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"http://localhost:8774/v2"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service compute|grep publicURL|cut -d'|' -f3)"}
 
 if ! which curl > /dev/null 2>&1
 then
