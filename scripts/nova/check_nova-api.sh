@@ -71,7 +71,7 @@ done
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service compute|grep publicURL|cut -d'|' -f3)"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service compute|grep publicURL|cut -d'|' -f3|sed 's/\s*//g')"}
 
 if ! which curl >/dev/null 2>&1
 then
@@ -88,17 +88,14 @@ fi
 # Get a token from Keystone
 TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 
-# Use the token to get a tenant ID. By default, it takes the second tenant
-TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["tenants"][0]["id"]')
-
 if [ -z "$TOKEN" ]; then
     echo "Unable to get a token from Keystone API"
     exit $STATE_CRITICAL
 fi
 
 START=`date +%s.%N`
-FLAVORS=$(curl -s -H "X-Auth-Token: $TOKEN" ${ENDPOINT_URL}/${TENANT_ID}/flavors)
-N_FLAVORS=$(echo $FLAVORS |  grep -Po '"name":.*?[^\\]",'| wc -l)
+FLAVORS=$(curl -s -H "X-Auth-Token: $TOKEN" ${ENDPOINT_URL}/flavors)
+N_FLAVORS=$(echo $FLAVORS | grep -Po '"name":.*?[^\\]"[,}]'| wc -l)
 END=`date +%s.%N`
 
 TIME=`echo ${END} - ${START} | bc`
