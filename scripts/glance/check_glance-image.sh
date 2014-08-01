@@ -93,7 +93,7 @@ done
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
-ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service image|grep publicURL|cut -d'|' -f3)"}
+ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service image|grep publicURL|cut -d'|' -f3|sed 's/\s*//g')"}
 
 if ! which curl >/dev/null 2>&1
 then
@@ -115,9 +115,9 @@ START=`date +%s`
 curl -s -d "<open file /tmp/"$IMAGE_NAME".img, mode 'r' at 0x7fc48f5b4151>" -X POST -H "X-Auth-Token: $TOKEN" -H "x-image-meta-container_format: bare" -H "Transfer-Encoding: chunked" -H "User-Agent: python-glanceclient" -H "Content-Type: application/octet-stream" -H "x-image-meta-disk_format: qcow2" -H "x-image-meta-name: $IMAGE_NAME" "$ENDPOINT_URL"/"$GLANCE_API_VERSION"/images | python -mjson.tool | awk -v var="\"id\":" '$0 ~ var { print $2 }' | sed -e 's/"//g' -e 's/,//g' > $IMAGE_ID_FILE
 if [ -s $IMAGE_ID_FILE ]
 then
-        IMAGE_ID=$(cat $IMAGE_ID_FILE)
+    IMAGE_ID=$(cat $IMAGE_ID_FILE)
 else
-        output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
+    output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
 fi
 
 rm -f /tmp/"$IMAGE_NAME".img
@@ -132,10 +132,8 @@ if [ $TIME -gt 60 ]; then
     output_result "CRITICAL - Unable to upload image in Glance" $STATE_CRITICAL
 else
     if [ "$TIME" -gt "20" ]; then
-            output_result "WARNING - Upload image in 20 seconds, it's too long" $STATE_WARNING
+        output_result "WARNING - Upload image in 20 seconds, it's too long" $STATE_WARNING
     else
         output_result "OK - Glance image uploaded in $TIME seconds" $STATE_OK
     fi
 fi
-
-
