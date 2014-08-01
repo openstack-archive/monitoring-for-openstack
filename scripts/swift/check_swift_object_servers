@@ -56,7 +56,7 @@ then
     exit $STATE_UNKNOWN
 fi
 
-CHECK=$(swift-recon --objmd5 | grep ' error')
+CHECK=$(swift-recon --md5 | grep ' error')
 echo $CHECK
 
 if echo "$CHECK" | grep -q ' 0 error'
