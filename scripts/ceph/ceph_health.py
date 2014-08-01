@@ -27,6 +27,9 @@ def interpret_output(output):
     '''Parse the output of ceph health and return an exit code and
 message compatible with nagios.'''
     tokens = output.split(' ')
+    if len(tokens) == 1:
+        tokens[0] = tokens[0].strip()
+        tokens.append('\n')
     if tokens[0] == 'HEALTH_OK':
         return (0, 'CEPH OK: ' + ' '.join(tokens[1:]))
     elif tokens[0] == 'HEALTH_WARN':
