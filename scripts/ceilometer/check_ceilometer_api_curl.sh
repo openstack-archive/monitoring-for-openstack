@@ -2,7 +2,7 @@
 
 # Ceilometer API monitoring script for Sensu / Nagios
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2013-2014 eNovance <licensing@enovance.com>
 #
 # Author: Guillaume Abrioux <guillaume.abrioux@enovance.com>
 #
@@ -54,7 +54,7 @@ do
             export ENDPOINT_URL=$OPTARG
             ;;
         T)
-            export OS_TENANT=$OPTARG
+            export OS_TENANT_NAME=$OPTARG
             ;;
         U)
             export OS_USERNAME=$OPTARG
@@ -79,7 +79,7 @@ then
     exit $STATE_UNKNOWN
 fi
 
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT'"}}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT_NAME'"}}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 TENANT_ID=$(curl -s -H "X-Auth-Token: $TOKEN" ${OS_AUTH_URL}/tenants |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["tenants"][0]["id"]')
 TOKEN2=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"} ,"tenantId":"'$TENANT_ID'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 

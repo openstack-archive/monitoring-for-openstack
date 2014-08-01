@@ -2,7 +2,7 @@
 
 # Glance API monitoring script for Sensu / Nagios
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2013-2014 eNovance <licensing@enovance.com>
 #
 # Author: Emilien Macchi <emilien.macchi@enovance.com>
 #         Nicolas Auvray <nicolas.auvray@enovance.com>
@@ -58,7 +58,7 @@ do
             export ENDPOINT_URL=$OPTARG
             ;;
         T)
-            export OS_TENANT=$OPTARG
+            export OS_TENANT_NAME=$OPTARG
             ;;
         U)
             export OS_USERNAME=$OPTARG
@@ -83,7 +83,7 @@ do
 done
 
 # User must provide at least non-empty parameters
-[[ -z "${OS_TENANT}" || -z "${OS_USERNAME}" || -z "${OS_PASSWORD}" ]] && (usage; exit 1)
+[[ -z "${OS_TENANT_NAME}" || -z "${OS_USERNAME}" || -z "${OS_PASSWORD}" ]] && (usage; exit 1)
 # If no timeout is specified
 [[ -z $KS_TIMEOUT ]] && export KS_TIMEOUT=5
 [[ -z $W_TIMEOUT ]] && export W_TIMEOUT=5
@@ -106,7 +106,7 @@ function getJson() {
 [ ! which awk >/dev/null 2>&1 ] && (echo "awk is not installed.";exit $STATE_UNKNOWN)
 
 # Get a token from Keystone
-KS_RESP=$(curl -s -m $KS_TIMEOUT -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT'"}}}' -H 'Content-type: application/json' || true)
+KS_RESP=$(curl -s -m $KS_TIMEOUT -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'" ,"tenant":"'$OS_TENANT_NAME'"}}}' -H 'Content-type: application/json' || true)
 if [ ! -z "${KS_RESP}" ]; then
     # We take the first ID value as it represents the keystone token
     TOKEN=$(echo ${KS_RESP} | getJson id 1)

@@ -2,7 +2,7 @@
 #
 # Neutron server monitoring script
 #
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2013-2014 eNovance <licensing@enovance.com>
 #
 # Author: Emilien Macchi <emilien.macchi@enovance.com>
 # With the good help of eNovance fellow contributorz :-)
@@ -57,7 +57,7 @@ do
             export ENDPOINT_URL=$OPTARG
             ;;
         T)
-            export OS_TENANT=$OPTARG
+            export OS_TENANT_NAME=$OPTARG
             ;;
         U)
             export OS_USERNAME=$OPTARG
@@ -76,7 +76,7 @@ do
 done
 
 # User must provide at least non-empty parameters
-[[ -z "${OS_TENANT}" || -z "${OS_USERNAME}" || -z "${OS_PASSWORD}" ]] && (usage; exit 1)
+[[ -z "${OS_TENANT_NAME}" || -z "${OS_USERNAME}" || -z "${OS_PASSWORD}" ]] && (usage; exit 1)
 
 # Set default values
 OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
@@ -90,7 +90,7 @@ then
 fi
 
 # Try to get an auth token from keystone API
-KS_RESP=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' || true)
+KS_RESP=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' || true)
 if [ ! -z "${KS_RESP}" ]; then
     TOKEN=$(echo ${KS_RESP} | python -c "import sys; import json; data = json.loads(sys.stdin.readline()); print data.get('access',{}).get('token',{}).get('id',{})")
     if [ "${TOKEN}" = "{}" ]; then
@@ -109,7 +109,7 @@ END=$(date +%s)
 if [ ! -z "${API_RESP}" ]; then
     NETWORKS=$(echo ${API_RESP} | python -c "import sys; import json; data = json.loads(sys.stdin.readline()); print data.get('networks',{})")
     if [ "${NETWORKS}" = "{}" ]; then
-        echo "CRITICAL: Unable to retrieve a network for tenant ${OS_TENANT} from Neutron API"
+        echo "CRITICAL: Unable to retrieve a network for tenant ${OS_TENANT_NAME} from Neutron API"
         exit $STATE_CRITICAL
     fi
 else

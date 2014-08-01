@@ -85,7 +85,7 @@ do
             export ENDPOINT_URL=$OPTARG
             ;;
         T)
-            export OS_TENANT=$OPTARG
+            export OS_TENANT_NAME=$OPTARG
             ;;
         U)
             export OS_USERNAME=$OPTARG
@@ -148,7 +148,7 @@ then
 fi
 
 # Get the token
-TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
+TOKEN=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' |python -c 'import sys; import json; data = json.loads(sys.stdin.readline()); print data["access"]["token"]["id"]')
 if [ -z $TOKEN ]
 then
 	output_result "CRITICAL - Unable to get a token from Keystone API" $STATE_CRITICAL
