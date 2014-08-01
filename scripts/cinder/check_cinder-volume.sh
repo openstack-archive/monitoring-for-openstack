@@ -2,7 +2,7 @@
 #
 # Cinder Volume monitoring script
 
-# Copyright © 2013 eNovance <licensing@enovance.com>
+# Copyright © 2013-2014 eNovance <licensing@enovance.com>
 #
 # Author: Emilien Macchi <emilien.macchi@enovance.com>
 #
@@ -26,7 +26,7 @@ STATE_OK=0
 STATE_WARNING=1
 STATE_CRITICAL=2
 STATE_UNKNOWN=3
-DEAMON='icinder-volume'
+DEAMON='cinder-volume'
 
 usage ()
 {
@@ -66,6 +66,8 @@ if [ "$(id -u)" != "0" ]; then
     echo "$DEAMON is running but the script must be run as root"
     exit $STATE_WARNING
 else
+
+    PID=$(ps -f --ppid ${PID} | awk "BEGIN {FS=\" \"}{if (/python(2.7)? [^ ]+${DEAMON}/) {print \$2 ; exit}}")
 
     #Need root to "run netstat -p"
     if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$KEY"
