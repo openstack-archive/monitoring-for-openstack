@@ -46,28 +46,4 @@ do
     esac
 done
 
-if ! which netstat >/dev/null 2>&1
-then
-    echo "netstat is not installed."
-    exit $STATE_UNKNOWN
-fi
-
-
-
-check_running $DAEMON
-
-if [ "$(id -u)" != "0" ]; then
-    echo "$DAEMON is running but the script must be run as root"
-    exit $STATE_WARNING
-else
-
-    #Need root to "run netstat -p"
-    if ! KEY=$(netstat -epta 2>/dev/null | awk "{if (/amqp.*${PID}\/python/) {print ; exit}}") || test -z "$KEY"
-    then
-        echo "$DAEMON is not connected to AMQP"
-        exit $STATE_CRITICAL
-    fi
-fi
-
-echo "$DAEMON is working."
-exit $STATE_OK
+check_running_and_amqp_connected $DAEMON
