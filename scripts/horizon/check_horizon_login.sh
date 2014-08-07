@@ -106,9 +106,9 @@ RESULT=$(curl -s -L -b "$COOKIE_FILE" --referer $HORIZON_URL --data "username=$O
 
 
 # If Auth work, find patterns Overview
-if [[ $RESULT == *Overview* ]]
+if [ ` echo $RESULT | grep Overview | wc -l ` -ne 0 ]
 then
     output_result "OK - Found string Overview in $HORIZON_URL" $STATE_OK
 else
-    output_result "CRITICAL - String \"Overview\" not found in $HORIZON_URL" $STATE_OK
+    output_result "CRITICAL - String \"Overview\" not found in  $HORIZON_URL" $STATE_CRITICAL
 fi
