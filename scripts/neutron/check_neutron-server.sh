@@ -97,7 +97,7 @@ done
 [[ -z $C_TIMEOUT ]] && export C_TIMEOUT=10
 
 # Set default values
-OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000"}
+OS_AUTH_URL=${OS_AUTH_URL:-"http://localhost:5000/v2.0"}
 ENDPOINT_URL=${ENDPOINT_URL:-"$(keystone catalog --service network|grep publicURL|cut -d'|' -f3|sed 's/\s*//g')"}
 AMQP_PORT=${AMQP_PORT:-5672}
 
@@ -114,8 +114,8 @@ function getJson() {
     awk -F"[,:}]" '{for(i=1;i<=NF;i++){if($i~/'$KEY'\042/){print $(i+1)}}}' | tr -d '"' | sed -n ${num}p | sed 's/^ //'
 }
 
-# Get token from Keystone
-KS_RESP=$(curl -s -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' || true)
+# Try to get an auth token from keystone API
+KS_RESP=$(curl -s -m $KS_TIMEOUT -X 'POST' ${OS_AUTH_URL}/tokens -d '{"auth":{"passwordCredentials":{"username": "'$OS_USERNAME'", "password":"'$OS_PASSWORD'"}, "tenantName":"'$OS_TENANT_NAME'"}}' -H 'Content-type: application/json' || :)
 if [ ! -z "${KS_RESP}" ]; then
     # We take the 1st ID value as it represents the token ID
     TOKEN=$(echo ${KS_RESP} | getJson id 1)
