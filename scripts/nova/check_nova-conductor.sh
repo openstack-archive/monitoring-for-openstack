@@ -55,7 +55,8 @@ then
     exit $STATE_UNKNOWN
 fi
 
-PID=$(ps -ef | awk "BEGIN {FS=\" \"}{if (/python(2.7)? [^ ]+${DEAMON}/) {print \$2 ; exit}}")
+#Grep the newest nova-conductor proc
+PID=$(pgrep -u nova ${DEAMON} -n)
 
 if [ -z $PID ]; then
     echo "$DEAMON is not running."
