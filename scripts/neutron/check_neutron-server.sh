@@ -104,7 +104,7 @@ fi
 
 # Check Neutron API
 START=$(date +%s)
-API_RESP=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" ${ENDPOINT_URL}/v2.0/networks.json || :)
+API_RESP=$(curl -s -H "X-Auth-Token: $TOKEN" -H "Content-type: application/json" ${ENDPOINT_URL}/networks.json || :)
 END=$(date +%s)
 if [ ! -z "${API_RESP}" ]; then
     NETWORKS=$(echo ${API_RESP} | python -c "import sys; import json; data = json.loads(sys.stdin.readline()); print data.get('networks',{})")
