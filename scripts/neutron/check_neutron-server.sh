@@ -135,7 +135,7 @@ END=$(date +%s.%N)
 if [ ! -z "${API_RESP}" ]; then
     # We take the name of the first network found
     NETWORKS=$(echo ${API_RESP} | getJson name 1)
-    if [ "${API_RESP}" = "{}" ]; then
+    if [ -z "${NETWORKS}" ]; then
         echo "CRITICAL: Unable to retrieve a network for tenant ${OS_TENANT_NAME} from Neutron API"
         exit $STATE_CRITICAL
     fi
