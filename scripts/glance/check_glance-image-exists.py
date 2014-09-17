@@ -23,8 +23,8 @@ from oschecks import utils
 
 def check_glance():
     glance = utils.Glance()
-    glance.add_argument('--req_count', dest='req_count', type=str,
-                        required=False,
+    glance.add_argument('--req_count', dest='req_count', type=int,
+                        required=False, default=0,
                         help='minimum number of images in glance')
     glance.add_argument('--req_images', metavar='req_images', type=str,
                         nargs='+', required=False,
@@ -33,24 +33,21 @@ def check_glance():
 
     #Flags resultat
     valid_image = 0
-    count = 0
-    if options.req_count:
-        required_count = int(options.req_count)
-        if (len(client.get_images(**{"limit": required_count}))
-                >= required_count):
-            count = 1
+    count = len(list(client.images.list(**{"limit": options.req_count or 1})))
 
     if options.req_images:
         required_images = options.req_images
         for image in required_images:
             try:
-                if len(client.get_images(**{"filters": {"name": image}})) == 1:
+                if len(list(client.images.list(
+                        **{"filters": {"name": image}}))) == 1:
                     valid_image = valid_image + 1
             except:
                 pass
 
-    if options.req_count and count == 0:
-        utils.critical("Failed - less than %d images found" % (required_count))
+    if options.req_count and count < options.req_count:
+        utils.critical("Failed - less than %d images found (%d)" %
+                       (options.req_count, count))
 
     if options.req_images and valid_image < len(required_images):
         utils.critical("Failed - '%s' %d/%d images found " %
@@ -59,7 +56,7 @@ def check_glance():
 
     if options.req_images and options.req_count:
         utils.ok("image %s found and enough images >=%d" %
-                 (", ".join(required_images), required_count))
+                 (", ".join(required_images), options.req_count))
     elif options.req_images:
         utils.ok("image %s found" % (", ".join(required_images)))
     elif options.req_count:
