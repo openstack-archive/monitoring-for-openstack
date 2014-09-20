@@ -38,9 +38,9 @@ class TestCephHealth(unittest.TestCase):
         self.assertEquals(message, 'CEPH CRITICAL: message')
 
     def test_interpret_output_unknown(self):
-        exit_code, message = ceph_health.interpret_output('message')
+        exit_code, message = ceph_health.interpret_output('strange message')
         self.assertEquals(exit_code, 3)
-        self.assertEquals(message, 'CEPH UNKNOWN: message')
+        self.assertEquals(message, 'CEPH UNKNOWN: strange message')
 
 if __name__ == "__main__":
     unittest.main()
