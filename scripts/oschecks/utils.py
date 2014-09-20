@@ -50,8 +50,16 @@ def ok(msg):
     sys.exit(0)
 
 
+def check_process_name(name, p):
+    # name can be truncated and a script so check also if it can be an
+    # argument to an interpreter
+    return p.name == name or \
+        len(p.cmdline) > 1 and p.cmdline[1].find(name) != -1
+
+
 def check_process_exists_and_amqp_connected(name):
-    processes = filter(lambda p: p.name == name, psutil.process_iter())
+    processes = filter(lambda p: check_process_name(name, p),
+                       psutil.process_iter())
     if not processes:
         critical("%s is not running" % name)
     for p in processes:
@@ -60,8 +68,9 @@ def check_process_exists_and_amqp_connected(name):
         except psutil.NoSuchProcess:
             continue
         found_amqp = (
-            len(itertools.takewhile(lambda c: c.remote_address[1]
-                                    != AMQP_PORT, connections))
+            len(list(itertools.takewhile(lambda c: len(c.remote_address) <= 1
+                                         or c.remote_address[1]
+                                         != AMQP_PORT, connections)))
             != len(connections))
         if found_amqp:
             ok("%s is working." % name)
