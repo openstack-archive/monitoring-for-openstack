@@ -23,6 +23,7 @@ import copy
 import itertools
 import time
 import traceback
+import os
 import sys
 
 import psutil
@@ -51,10 +52,15 @@ def ok(msg):
 
 
 def check_process_name(name, p):
+    if p.name == name:
+        return True
     # name can be truncated and a script so check also if it can be an
     # argument to an interpreter
-    return p.name == name or \
-        len(p.cmdline) > 1 and p.cmdline[1].find(name) != -1
+    if len(p.cmdline) > 0 and os.path.basename(p.cmdline[0]) == name:
+        return True
+    if len(p.cmdline) > 1 and os.path.basename(p.cmdline[1]) == name:
+        return True
+    return False
 
 
 def check_process_exists_and_amqp_connected(name):
