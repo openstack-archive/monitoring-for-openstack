@@ -226,13 +226,27 @@ class Novautils:
                 self.msgs.append("Cannot find the flavor %s (%s)"
                                  % (flavor_name, e))
 
-    def create_instance(self, instance_name):
+    def create_instance(self, instance_name, network):
         if not self.msgs:
+            kwargs = {}
             try:
-                self.instance = self.nova_client.servers.create(
-                    name=instance_name,
-                    image=self.image,
-                    flavor=self.flavor)
+                if network:
+                    try:
+                        network = self.nova_client.networks.find(
+                            label=network).id
+                    except exceptions.NotFound:
+                        try:
+                            network = self.nova_client.networks.find(
+                                id=network).id
+                        except exceptions.NotFound:
+                            self.msgs.append("Cannot found network %s" %
+                                             network)
+                            return
+                    kwargs['nics'] = [{'net-id': network}]
+                    self.instance = self.nova_client.servers.create(
+                        name=instance_name,
+                        image=self.image,
+                        flavor=self.flavor, **kwargs)
             except Exception as e:
                 self.msgs.append("Cannot create the vm %s (%s)"
                                  % (instance_name, e))
@@ -365,6 +379,12 @@ parser.add_argument('--timeout_delete', metavar='timeout_delete', type=int,
                     help='Max number of second to delete an existing instance'
                     + '(45 by default).')
 
+parser.add_argument('--insecure', action='store_true',
+                    help="The server's cert will not be verified")
+
+parser.add_argument('--network', metavar='network', type=str,
+                    help="Override the network name or ID to use")
+
 parser.add_argument('--verbose', action='count',
                     help='Print requests on stderr.')
 
@@ -379,7 +399,8 @@ try:
                          api_key=args.password,
                          auth_url=args.auth_url,
                          endpoint_type=args.endpoint_type,
-                         http_log_debug=args.verbose)
+                         http_log_debug=args.verbose,
+                         insecure=args.insecure)
 except Exception as e:
     script_critical("Error creating nova communication object: %s\n" % e)
 
@@ -404,7 +425,7 @@ util.check_existing_instance(args.instance_name,
                              args.timeout_delete)
 util.get_image(args.image_name)
 util.get_flavor(args.flavor_name)
-util.create_instance(args.instance_name)
+util.create_instance(args.instance_name, args.network)
 util.instance_ready(args.timeout)
 util.delete_instance()
 util.instance_deleted(args.timeout)
