@@ -19,6 +19,7 @@
 # under the License.
 
 import argparse
+import shlex
 import subprocess
 import os
 
@@ -64,7 +65,8 @@ def _pacemaker_host_check():
             if current_hostname != local_hostname:
                 utils.ok("pacemaker resource %s doesn't on this node "
                          "(but on %s)" % (resource, current_hostname))
-            os.execvp(options.script, [options.script])
+            script = shlex.split(options.script)
+            os.execvp(script[0], script)
 
     else:
         utils.critical('pacemaker resource %s not found' %
