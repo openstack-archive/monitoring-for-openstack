@@ -1,1 +1,0 @@
-oschecks/amqp.py
