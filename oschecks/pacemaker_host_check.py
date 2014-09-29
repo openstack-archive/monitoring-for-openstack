@@ -28,7 +28,7 @@ except ImportError:
     from oschecks import utils
 
 
-def pacemaker_host_check():
+def _pacemaker_host_check():
     parser = argparse.ArgumentParser(
         description='Check amqp connection of an OpenStack service.')
     parser.add_argument('-r', dest='pacemaker_resource',
@@ -71,5 +71,5 @@ def pacemaker_host_check():
                        options.pacemaker_resource)
 
 
-if __name__ == '__main__':
-    utils.safe_run(pacemaker_host_check)
+def pacemaker_host_check():
+    utils.safe_run(_pacemaker_host_check)
