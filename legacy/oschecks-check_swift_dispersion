@@ -43,15 +43,15 @@ for type_, values in stats.iteritems():
 
     msgs.append("%.2f%% %ss found" % (values['pct_found'], type_))
 
-    if values['missing_one'] > 0:
+    if values.get('missing_one', 0)> 0:
         msgs.append("%d %ss missing one copy" % (values['missing_one'], type_))
         state = max(state, STATE_WARNING)
 
-    if values['missing_two'] > 0:
+    if values.get('missing_two', 0) > 0:
         msgs.append("%d %ss missing two copies" % (values['missing_two'], type_))
         state = max(state, STATE_WARNING)
 
-    if values['missing_all'] > 0:
+    if values.get('missing_all', 0) > 0:
         msgs.append("%d %ss missing ALL copies" % (values['missing_all'], type_))
         state = max(state, STATE_CRITICAL)
 
