@@ -76,6 +76,7 @@ fi
 case $field in
 	async_pending)
 		opt="--async"
+        no_hosts_data_is_ok=1
 		;;
 	replication_time)
 		opt="--replication"
@@ -100,11 +101,22 @@ esac
 data=$(swift-recon $opt | sed -n 's/^\['$field'\] //gp')
 eval $(echo $data | sed -n 's/^low: \([[:digit:]\.]*\), high: \([[:digit:]\.]*\), avg: \([[:digit:]\.]*\), total: \([[:digit:]\.]*\), Failed: \([[:digit:]\.]*\)%, no_result: \([[:digit:]\.]*\), reported: \([[:digit:]\.]*\)/low="\1";high="\2";avg="\3";total="\4";failed="\5";no_result="\6";reported="\7"/gp')
 
-# no
-failed=$(( ${failed/./} / 10 )) # change percent in perthousand
-avg=$(( ${avg/./} / 10 )) # change percent in perthousand
+if [ "$(echo $data | grep 'No hosts returned valid data')" ] ; then
+    no_host_data=1
+else
+    failed=$(( ${failed/./} / 10 )) # change percent in perthousand
+    avg=$(( ${avg/./} / 10 )) # change percent in perthousand
+fi
 
-if [ "$no_result" != "0" ]; then 
+if [ "$no_host_data" ]; then
+    if [ "$no_hosts_data_is_ok" ]; then
+        echo "OK - No data"
+        exit $STATE_OK
+    else
+        echo "CRITICAL - $data"
+        exit $STATE_CRITICAL
+    fi
+elif [ "$no_result" != "0" ]; then 
 	echo "CRITICAL - $data"
 	exit $STATE_CRITICAL
 elif [ "$failed" != "0" ]; then
