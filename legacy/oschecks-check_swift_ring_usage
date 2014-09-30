@@ -2,7 +2,7 @@
 #
 # Check the disk usage of the Swift ring 
 #
-# Copyright © 2014 eNovance <licensing@enovance.com>
+# Copyright 2014 eNovance <licensing@enovance.com>
 #
 # Author: Gaetan Trellu <gaetan.trellu@enovance.com>
 #

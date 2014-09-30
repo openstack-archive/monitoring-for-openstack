@@ -23,10 +23,10 @@ from datetime import datetime
 import logging
 import os
 import time
-import urlparse
 
 from novaclient.client import Client
 from novaclient import exceptions
+from six.moves import urllib
 
 from oschecks import utils
 
@@ -106,7 +106,7 @@ class Novautils(object):
         self.check_connection()
 
         try:
-            endpoint_url = urlparse.urlparse(url)
+            endpoint_url = urllib.parse.urlparse(url)
         except Exception as e:
             utils.unknown("you must provide an endpoint_url in the form"
                           + "<scheme>://<url>/ (%s)\n" % e)
@@ -116,7 +116,7 @@ class Novautils(object):
                           + "<scheme>://<url>/ (%s)\n" % e)
         catalog_url = None
         try:
-            catalog_url = urlparse.urlparse(
+            catalog_url = urllib.parse.urlparse(
                 self.nova_client.client.management_url)
         except Exception as e:
             utils.unknown("unknown error parsing the catalog url : %s\n" % e)
@@ -129,12 +129,12 @@ class Novautils(object):
                 port = catalog_url.port
 
         netloc = "%s:%i" % (endpoint_url.hostname, port)
-        url = urlparse.urlunparse([scheme,
-                                   netloc,
-                                   catalog_url.path,
-                                   catalog_url.params,
-                                   catalog_url.query,
-                                   catalog_url.fragment])
+        url = urllib.parse.urlunparse([scheme,
+                                       netloc,
+                                       catalog_url.path,
+                                       catalog_url.params,
+                                       catalog_url.query,
+                                       catalog_url.fragment])
         self.nova_client.client.set_management_url(url)
 
     def check_existing_instance(self, instance_name, delete, timeout=45):

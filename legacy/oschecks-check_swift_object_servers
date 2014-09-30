@@ -2,7 +2,7 @@
 #
 # check_swift_object_servers - Check OpenStack Swift object servers status
 #
-# Copyright © 2012 eNovance <licensing@enovance.com>
+# Copyright 2012 eNovance <licensing@enovance.com>
 #
 # Author: Julien Danjou <julien@danjou.info>
 #

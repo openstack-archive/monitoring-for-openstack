@@ -2,7 +2,7 @@
 #
 # Nova create instance monitoring script for Sensu / Nagios
 #
-# Copyright © 2014 eNovance <licensing@enovance.com>
+# Copyright 2014 eNovance <licensing@enovance.com>
 #
 # Author: Florian Lambert <florian.lambert@enovance.com>
 #

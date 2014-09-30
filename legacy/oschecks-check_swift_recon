@@ -2,7 +2,7 @@
 #
 # check_swift_recon - Check OpenStack Swift recon values
 #
-# Copyright © 2012 eNovance <licensing@enovance.com>
+# Copyright 2012 eNovance <licensing@enovance.com>
 #
 # Author: Mehdi Abaakouk <mehdi.abaakouk@enovance.com>
 #

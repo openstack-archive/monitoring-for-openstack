@@ -5,3 +5,4 @@ python-glanceclient
 python-keystoneclient
 python-neutronclient
 python-novaclient
+six
