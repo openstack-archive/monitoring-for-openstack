@@ -190,10 +190,10 @@ class Novautils(object):
                                              network)
                             return
                     kwargs['nics'] = [{'net-id': network}]
-                    self.instance = self.nova_client.servers.create(
-                        name=instance_name,
-                        image=self.image,
-                        flavor=self.flavor, **kwargs)
+                self.instance = self.nova_client.servers.create(
+                    name=instance_name,
+                    image=self.image,
+                    flavor=self.flavor, **kwargs)
             except Exception as e:
                 self.msgs.append("Cannot create the vm %s (%s)"
                                  % (instance_name, e))
