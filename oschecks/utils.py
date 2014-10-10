@@ -83,6 +83,14 @@ def check_process_exists_and_amqp_connected(name):
     critical("%s is not connected to AMQP" % name)
 
 
+def check_process_exists(name):
+    processes = filter(lambda p: check_process_name(name, p),
+                       psutil.process_iter())
+    if not processes:
+        critical("%s is not running" % name)
+    ok("%s is working." % name)
+
+
 def timeit_wrapper(func):
     def wrapper(*arg, **kw):
         t1 = time.time()
