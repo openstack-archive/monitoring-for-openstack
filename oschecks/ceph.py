@@ -35,11 +35,14 @@ def remaning(avail, total):
 
 def interpret_output_df(output):
     '''Parse the output of ceph health and return an exit code and
-message compatible with nagios.'''
+    message compatible with nagios.
+    '''
+
     try:
         data = json.loads(output)
     except Exception:
-        return (1, 'CEPH WARNING: unable to parse ceph df %s' % traceback.format_exc())
+        return (1, 'CEPH WARNING: unable to parse ceph df %s' %
+                traceback.format_exc())
 
     warn_percent = int(sys.argv[1]) if len(sys.argv) >= 2 else 85
     crit_percent = int(sys.argv[2]) if len(sys.argv) >= 3 else 98
@@ -62,6 +65,7 @@ message compatible with nagios.'''
 
 def check_ceph_df():
     'Program entry point.'
+
     try:
         res = subprocess.check_output(["ceph", "df", "--format=json"],
                                       stderr=subprocess.STDOUT)
@@ -78,7 +82,9 @@ def check_ceph_df():
 
 def interpret_output_health(output):
     '''Parse the output of ceph health and return an exit code and
-message compatible with nagios.'''
+    message compatible with nagios.
+    '''
+
     tokens = output.split(' ')
     if len(tokens) == 1:
         tokens[0] = tokens[0].strip()
@@ -95,6 +101,7 @@ message compatible with nagios.'''
 
 def check_ceph_health():
     'Program entry point.'
+
     try:
         res = subprocess.check_output(["ceph", "health"],
                                       stderr=subprocess.STDOUT)

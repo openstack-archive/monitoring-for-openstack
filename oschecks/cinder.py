@@ -18,13 +18,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import argparse
-from datetime import datetime
+import datetime
 import logging
 import os
 import time
 import urlparse
 
-from cinderclient.client import Client
+from cinderclient.client import Client # noqa
 from cinderclient import exceptions
 
 from oschecks import utils
@@ -83,8 +83,8 @@ class Novautils(object):
             dt = datetime.utcnow()
         td = dt - epoch
         # return td.total_seconds()
-        return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6)
-                   / 1e6)
+        return int((td.microseconds +
+                   (td.seconds + td.days * 24 * 3600) * 10**6) / 1e6)
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -164,7 +164,7 @@ class Novautils(object):
                 self.volume = self.nova_client.volumes.create(**conf)
             except Exception as e:
                 self.msgs.append("Cannot create the volume %s (%s)"
-                                 % (args.volume_name, e))
+                                 % (volume_name, e))
 
     def volume_ready(self, timeout):
         if not self.msgs:
@@ -236,9 +236,9 @@ def _check_cinder_volume():
                         + 'Public by default.')
 
     parser.add_argument('--force_delete', action='store_true',
-                        help='If matching volumes are found, delete them and add '
-                        + 'a notification in the message instead of getting out '
-                        + 'in critical state.')
+                        help='If matching volumes are found, delete them and '
+                        + 'add a notification in the message instead of '
+                        + 'getting out in critical state.')
 
     parser.add_argument('--api_version', metavar='api_version', type=str,
                         default='1',

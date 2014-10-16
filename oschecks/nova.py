@@ -19,12 +19,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import argparse
-from datetime import datetime
+import datetime
 import logging
 import os
 import time
 
-from novaclient.client import Client
+from novaclient.client import Client # noqa
 from novaclient import exceptions
 from six.moves import urllib
 
@@ -88,8 +88,8 @@ class Novautils(object):
             dt = datetime.utcnow()
         td = dt - epoch
         # return td.total_seconds()
-        return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6)
-                   / 1e6)
+        return int((td.microseconds + (td.seconds + td.days * 24 * 3600)
+                    * 10**6) / 1e6)
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -309,9 +309,9 @@ def _check_nova_instance():
                         % default_instance_name)
 
     parser.add_argument('--force_delete', action='store_true',
-                        help='If matching instances are found delete them and add'
-                        + 'a notification in the message instead of getting out'
-                        + 'in critical state.')
+                        help='If matching instances are found delete them and '
+                        + 'add a notification in the message instead of '
+                        + 'getting out in critical state.')
 
     parser.add_argument('--api_version', metavar='api_version', type=str,
                         default='2',
@@ -324,8 +324,8 @@ def _check_nova_instance():
 
     parser.add_argument('--timeout_delete', metavar='timeout_delete', type=int,
                         default=45,
-                        help='Max number of second to delete an existing instance'
-                        + '(45 by default).')
+                        help='Max number of second to delete an existing '
+                        + 'instance (45 by default).')
 
     parser.add_argument('--insecure', action='store_true',
                         help="The server's cert will not be verified")
