@@ -24,20 +24,21 @@ class TestCephHealth(unittest.TestCase):
 
     def test_interpret_output_ok(self):
         exit_code, message = ceph.interpret_output_health('HEALTH_OK message')
-        self.assertEquals(exit_code, 0)
-        self.assertEquals(message, 'CEPH OK: message')
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(message, 'CEPH OK: message')
 
     def test_interpret_output_warn(self):
-        exit_code, message = ceph.interpret_output_health('HEALTH_WARN message')
-        self.assertEquals(exit_code, 1)
-        self.assertEquals(message, 'CEPH WARNING: message')
+        exit_code, message = ceph.interpret_output_health('HEALTH_WARN '
+                                                          'message')
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(message, 'CEPH WARNING: message')
 
     def test_interpret_output_critical(self):
         exit_code, message = ceph.interpret_output_health('HEALTH_ERR message')
-        self.assertEquals(exit_code, 2)
-        self.assertEquals(message, 'CEPH CRITICAL: message')
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(message, 'CEPH CRITICAL: message')
 
     def test_interpret_output_unknown(self):
         exit_code, message = ceph.interpret_output_health('strange message')
-        self.assertEquals(exit_code, 3)
-        self.assertEquals(message, 'CEPH UNKNOWN: strange message')
+        self.assertEqual(exit_code, 3)
+        self.assertEqual(message, 'CEPH UNKNOWN: strange message')
