@@ -26,7 +26,7 @@ import re
 import urlparse
 
 from keystoneclient.v2_0 import client
-from neutronclient.neutron import client as neutron 
+from neutronclient.neutron import client as neutron
 
 from oschecks import utils
 
@@ -114,8 +114,8 @@ class Novautils(object):
             dt = datetime.utcnow()
         td = dt - epoch
         # return td.total_seconds()
-        return int((td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6)
-                   / 1e6)
+        return int((td.microseconds + (td.seconds + td.days * 24 * 3600)
+                    * 10**6) / 1e6)
 
     def check_connection(self, force=False):
         if not self.connection_done or force:
@@ -137,12 +137,13 @@ class Novautils(object):
                     tenant_id=self.tenant_id)['floatingips']:
                 self.all_floating_ips.append(floating_ip)
         return self.all_floating_ips
-                
+
     def check_existing_floatingip(self, floating_ip=None, delete=False):
         count = 0
         found_ips = []
         for ip in self.list_floating_ips():
-            if floating_ip == 'all' or floating_ip.match(ip['floating_ip_address']):
+            if floating_ip == 'all' or floating_ip.match(
+                    ip['floating_ip_address']):
                 if delete:
                     # asynchronous call, we do not check that it worked
                     self.nova_client.delete_floatingip(ip['id'])
@@ -151,7 +152,8 @@ class Novautils(object):
         if count > 0:
             if delete:
                 self.notifications.append("Found %d ip(s): %s"
-                                          % (count, '{' + ', '.join(found_ips) + '}'))
+                                          % (count, '{' + ', '.join(
+                                             found_ips) + '}'))
             else:
                 self.msgs.append("Found %d ip(s): %s. "
                                  % (count,  ', '.join(found_ips))
@@ -162,37 +164,45 @@ class Novautils(object):
         if not self.msgs:
             if not self.network_id:
                 try:
-                    self.network_id = self.nova_client.list_networks(name=router_name,fields='id')['networks'][0]['id']
-                except Exception as e:
-                    self.msgs.append("Cannot find ext router named '%s'." % router_name)
-        
+                    self.network_id = self.nova_client.list_networks(
+                        name=router_name, fields='id')['networks'][0]['id']
+                except Exception:
+                    self.msgs.append("Cannot find ext router named '%s'."
+                                     % router_name)
+
     def create_floating_ip(self):
         if not self.msgs:
             try:
-                body={'floatingip': {'floating_network_id': self.network_id}}
+                body = {'floatingip': {'floating_network_id': self.network_id}}
                 self.fip = self.nova_client.create_floatingip(body=body)
-                self.notifications.append("fip=%s" % self.fip['floatingip']['floating_ip_address'])
+                self.notifications.append(
+                    "fip=%s" % self.fip['floatingip']['floating_ip_address'])
             except Exception as e:
                 self.msgs.append("Cannot create a floating ip: %s" % e)
 
     def delete_floating_ip(self):
         if not self.msgs:
             try:
-                self.nova_client.delete_floatingip(self.fip['floatingip']['id'])
-            except Exception as e:
-                self.msgs.append("Cannot remove floating ip %s" % self.fip['floatingip']['id'])
+                self.nova_client.delete_floatingip(
+                    self.fip['floatingip']['id'])
+            except Exception:
+                self.msgs.append("Cannot remove floating ip %s"
+                                 % self.fip['floatingip']['id'])
 
-                
+
 def fip_type(string):
     if string == 'all':
         return 'all'
     else:
         return re.compile(string)
 
-        
+
 def _check_neutron_floating_ip():
     parser = argparse.ArgumentParser(
-        description='Check an Floating ip creation. Note that\'s it\'s able to delete *all* floating ips from a account, so ensure that nothing important is running on the specified account.')
+        description='Check an Floating ip creation. Note that it is able '
+                    + 'to delete *all* floating ips from a account, so '
+                    + 'ensure that nothing important is running on the '
+                    + 'specified account.')
     parser.add_argument('--auth_url', metavar='URL', type=str,
                         default=os.getenv('OS_AUTH_URL'),
                         help='Keystone URL')
@@ -218,24 +228,25 @@ def _check_neutron_floating_ip():
                         + 'Public by default.')
 
     parser.add_argument('--force_delete', action='store_true',
-                        help='If matching floating ip are found, delete them and add '
-                        + 'a notification in the message instead of getting out '
-                        + 'in critical state.')
+                        help='If matching floating ip are found, delete them '
+                        + 'and add a notification in the message instead of '
+                        + 'getting out in critical state.')
 
     parser.add_argument('--timeout', metavar='timeout', type=int,
                         default=120,
-                        help='Max number of second to create/delete a floating ip '
-                        + '(120 by default).')
+                        help='Max number of second to create/delete a '
+                        + 'floating ip (120 by default).')
 
     parser.add_argument('--floating_ip', metavar='floating_ip', type=fip_type,
                         default=None,
                         help='Regex of IP(s) to check for existance. '
-                        + 'This value can be "all" for conveniance (match all ip). '
-                        + 'This permit to avoid certain floating ip to be kept. '
-                        + 'Its default value prevents the removal of any existing floating ip')
+                        + 'This value can be "all" for conveniance (match '
+                        + 'all ip). This permit to avoid certain floating '
+                        + 'ip to be kept. Its default value prevents the '
+                        + 'removal of any existing floating ip')
 
-    parser.add_argument('--ext_router_name', metavar='ext_router_name', type=str,
-                        default='public',
+    parser.add_argument('--ext_router_name', metavar='ext_router_name',
+                        type=str, default='public',
                         help='Name of the "public" router (public by default)')
 
     parser.add_argument('--verbose', action='count',
@@ -257,14 +268,16 @@ def _check_neutron_floating_ip():
         utils.critical("Authentication error: %s\n" % e)
 
     try:
-        endpoint = nova_client.service_catalog.get_endpoints('network')['network'][0][args.endpoint_type]
+        endpoint = nova_client.service_catalog.get_endpoints(
+            'network')['network'][0][args.endpoint_type]
         if args.endpoint_url:
             endpoint = mangle_url(endpoint, args.endpoint_url)
 
         token = nova_client.service_catalog.get_token()['id']
         if args.verbose:
             logging.basicConfig(level=logging.DEBUG)
-        neutron_client = neutron.Client('2.0', endpoint_url=endpoint, token=token)
+        neutron_client = neutron.Client('2.0', endpoint_url=endpoint,
+                                        token=token)
 
     except Exception as e:
         utils.critical("Error creating neutron object: %s\n" % e)

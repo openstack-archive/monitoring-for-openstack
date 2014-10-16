@@ -28,7 +28,8 @@ class TestCephHealth(unittest.TestCase):
         self.assertEquals(message, 'CEPH OK: message')
 
     def test_interpret_output_warn(self):
-        exit_code, message = ceph.interpret_output_health('HEALTH_WARN message')
+        exit_code, message = ceph.interpret_output_health('HEALTH_WARN '
+                                                          'message')
         self.assertEquals(exit_code, 1)
         self.assertEquals(message, 'CEPH WARNING: message')
 
