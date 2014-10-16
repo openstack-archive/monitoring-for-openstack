@@ -21,10 +21,10 @@
 
 import copy
 import itertools
-import time
-import traceback
 import os
 import sys
+import time
+import traceback
 
 import psutil
 
