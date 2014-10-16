@@ -19,9 +19,9 @@
 # under the License.
 
 import argparse
+import os
 import shlex
 import subprocess
-import os
 
 try:
     import utils
