@@ -39,7 +39,8 @@ message compatible with nagios.'''
     try:
         data = json.loads(output)
     except Exception:
-        return (1, 'CEPH WARNING: unable to parse ceph df %s' % traceback.format_exc())
+        return (1, 'CEPH WARNING: unable to parse ceph df %s' %
+                traceback.format_exc())
 
     warn_percent = int(sys.argv[1]) if len(sys.argv) >= 2 else 85
     crit_percent = int(sys.argv[2]) if len(sys.argv) >= 3 else 98
