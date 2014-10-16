@@ -64,7 +64,7 @@ def _check_glance_image_exists():
                         help='name of images who must be available')
     options, args, client = glance.setup()
 
-    #Flags resultat
+    # Flags resultat
     valid_image = 0
     count = len(list(client.images.list(**{"limit": options.req_count or 1})))
 
@@ -75,7 +75,7 @@ def _check_glance_image_exists():
                 if len(list(client.images.list(
                         **{"filters": {"name": image}}))) == 1:
                     valid_image = valid_image + 1
-            except:
+            except Exception:
                 pass
 
     if options.req_count and count < options.req_count:
