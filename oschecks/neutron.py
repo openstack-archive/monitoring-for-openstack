@@ -109,9 +109,9 @@ class Novautils(object):
     # now, after checking http://stackoverflow.com/a/16307378,
     # and http://stackoverflow.com/a/8778548 made my mind to this approach
     @staticmethod
-    def totimestamp(dt=None, epoch=datetime(1970, 1, 1)):
+    def totimestamp(dt=None, epoch=datetime.datetime(1970, 1, 1)):
         if not dt:
-            dt = datetime.utcnow()
+            dt = datetime.datetime.utcnow()
         td = dt - epoch
         # return td.total_seconds()
         return int((td.microseconds + (td.seconds + td.days * 24 * 3600)
