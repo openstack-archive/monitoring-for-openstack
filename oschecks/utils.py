@@ -170,6 +170,11 @@ class Ceilometer(object):
         from ceilometerclient import shell
         self.ceilometer = shell.CeilometerShell()
         self.base_argv = copy.deepcopy(sys.argv[1:])
+        # NOTE(gordc): workaround for bug1434264
+        if not hasattr(self.ceilometer, 'auth_plugin'):
+            from ceilometerclient import client
+            if hasattr(client, 'AuthPlugin'):
+                self.ceilometer.auth_plugin = client.AuthPlugin()
         self.ceilometer.parser = self.ceilometer.get_base_parser()
         self.add_argument = self.ceilometer.parser.add_argument
 
