@@ -49,9 +49,9 @@ def interpret_output_df(output):
     warn_percent = int(sys.argv[1]) if len(sys.argv) >= 2 else 85
     crit_percent = int(sys.argv[2]) if len(sys.argv) >= 3 else 98
 
-    total = int(data['stats']['total_space'])
-    used = int(data['stats']['total_used'])
-    avail = int(data['stats']['total_avail'])
+    total = int(data['stats']['total_bytes'])
+    used = int(data['stats']['total_used_bytes'])
+    avail = int(data['stats']['total_avail_bytes'])
 
     # Test correctness of values
     if used + avail != total:
