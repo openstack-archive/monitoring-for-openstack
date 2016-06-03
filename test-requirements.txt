@@ -1,3 +1,0 @@
-testrepository
-discover
-sphinx
