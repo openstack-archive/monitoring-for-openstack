@@ -1,7 +1,0 @@
-.tox
-AUTHORS
-ChangeLog
-*.egg-info
-*.pyc
-.testrepository
-doc/build
