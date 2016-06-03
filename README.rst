@@ -1,23 +1,17 @@
 monitoring-for-openstack
 ========================
 
-A bunch of scripts that you can use to monitor OpenStack Services
+This project is no longer maintained.
 
-License
-=======
+The contents of this repository are still available in the Git
+source code management system.  To see the contents of this
+repository before it reached its end of life, please check out the
+previous commit with "git checkout HEAD^1".
 
-Apache License 2.0
+(Optional:)
+For an alternative project, please see osops-tools-monitoring at
+http://github.com/openstack/osops-tools-monitoring .
 
-Copyright 2012-2014 eNovance <licensing@enovance.com>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+For any further questions, please email
+openstack-dev@lists.openstack.org or join #openstack-dev on
+Freenode.
